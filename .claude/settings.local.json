@@ -26,7 +26,13 @@
       "WebFetch(domain:picks.cbssports.com)",
       "Bash(timeout:*)",
       "Bash(tasklist)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git-push.bat)",
+      "Bash(cmd /c git-push.bat)",
+      "Bash(C:UserscentrOneDriveDocumentsSmartBets2.0git-push.bat)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

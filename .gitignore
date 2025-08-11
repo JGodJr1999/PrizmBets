@@ -1,0 +1,84 @@
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Dependencies
+node_modules/
+/node_modules
+frontend/node_modules/
+backend/venv/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Production builds
+frontend/build/
+frontend/dist/
+backend/dist/
+*.egg-info/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/instance/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+backend/server.log
+backend/pickem_server.log
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+tmp/
+temp/
+
+# API Keys and secrets
+*_secret.json
+*.pem
+*.key
+
+# Python
+*.py[cod]
+*$py.class
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+
+# npm
+.npm
+.eslintcache
+.yarn-integrity
+
+# misc
+.env.backup
+.env.production
+debug.log

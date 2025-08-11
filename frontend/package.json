@@ -21,7 +21,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "save": "git add -A && git commit -m \"Quick save\" && git push origin main",
+    "commit": "git add -A && git commit -m",
+    "push": "git push origin main",
+    "status": "git status",
+    "git:auto": "cd .. && git-push.bat"
   },
   "eslintConfig": {
     "extends": [
