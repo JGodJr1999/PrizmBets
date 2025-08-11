@@ -1,6 +1,35 @@
 import re
 from marshmallow import Schema, fields, validate, ValidationError
 from typing import Dict, Any, List
+from functools import wraps
+from flask import request, jsonify
+
+def validate_json(f):
+    """Decorator to validate JSON request body"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        return f(*args, **kwargs)
+    return decorated_function
+
+def validate_required_fields(required_fields):
+    """Decorator to validate required fields in JSON request"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 400
+            
+            data = request.get_json()
+            missing = [field for field in required_fields if field not in data]
+            
+            if missing:
+                return jsonify({'error': f'Missing required fields: {", ".join(missing)}'}), 400
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 class InputSanitizer:
     """Centralized input sanitization for security"""

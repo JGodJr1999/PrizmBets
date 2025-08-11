@@ -22,7 +22,7 @@ class SubscriptionTier:
     PRICING = {
         FREE: {'price': 0, 'monthly_evaluations': 5, 'features': ['basic_odds', 'parlay_builder']},
         PRO: {'price': 999, 'monthly_evaluations': -1, 'features': ['unlimited_evaluations', 'advanced_analytics', 'line_movement']},  # $9.99
-        PREMIUM: {'price': 2999, 'monthly_evaluations': -1, 'features': ['all_pro_features', 'personal_consultant', 'custom_strategies']}  # $29.99
+        PREMIUM: {'price': 1999, 'monthly_evaluations': -1, 'features': ['all_pro_features', 'personal_consultant', 'custom_strategies']}  # $19.99
     }
 
 class PaymentService:

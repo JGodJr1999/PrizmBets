@@ -23,7 +23,7 @@ def validate_json_data(required_fields=None):
     """Decorator to validate JSON request data"""
     def decorator(f):
         @wraps(f)
-        def wrapper(*args, **kwargs):
+        def decorated_function(*args, **kwargs):
             if not request.is_json:
                 return jsonify({
                     'success': False,
@@ -47,7 +47,8 @@ def validate_json_data(required_fields=None):
             
             g.json_data = data
             return f(*args, **kwargs)
-        return wrapper
+        decorated_function.__name__ = f.__name__  # Preserve the original function name
+        return decorated_function
     return decorator
 
 # Pool Management Routes

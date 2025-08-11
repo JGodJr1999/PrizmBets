@@ -80,11 +80,14 @@ def create_app(config_name=None):
     from app.routes.api import api_bp
     from app.routes.auth import auth_bp
     from app.routes.payments import payments_bp
-    from app.routes.pickem import pickem_bp
+    from app.routes.updates import updates_bp
+    # TODO: Fix pickem blueprint endpoint conflict
+    # from app.routes.pickem import pickem_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(payments_bp, url_prefix='/api/payments')
-    app.register_blueprint(pickem_bp)
+    app.register_blueprint(updates_bp)
+    # app.register_blueprint(pickem_bp)
     
     # Add security headers
     @app.after_request
@@ -111,10 +114,11 @@ def create_app(config_name=None):
     @app.route('/health')
     def health_check():
         try:
-            # Test database connection
-            db.session.execute('SELECT 1')
+            # Test database connection with modern SQLAlchemy syntax
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
             db_status = 'healthy'
-        except Exception:
+        except Exception as e:
             db_status = 'unhealthy'
         
         return {
