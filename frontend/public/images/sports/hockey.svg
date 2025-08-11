@@ -1,0 +1,8 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="120" fill="transparent"/>
+  <!-- Hockey puck -->
+  <ellipse cx="60" cy="60" rx="25" ry="8" fill="#2F2F2F" stroke="#1A1A1A" stroke-width="2"/>
+  <!-- Hockey stick -->
+  <path d="M 35 40 Q 40 45 45 55 L 48 75" stroke="#8B4513" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 45 72 L 55 75" stroke="#8B4513" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

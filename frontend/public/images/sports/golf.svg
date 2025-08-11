@@ -1,0 +1,16 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="120" fill="transparent"/>
+  <!-- Golf ball -->
+  <circle cx="60" cy="75" r="8" fill="white" stroke="#DDD" stroke-width="1"/>
+  <!-- Golf ball dimples -->
+  <circle cx="57" cy="72" r="1" fill="#CCC"/>
+  <circle cx="63" cy="72" r="1" fill="#CCC"/>
+  <circle cx="60" cy="78" r="1" fill="#CCC"/>
+  <!-- Golf club -->
+  <line x1="45" y1="25" x2="52" y2="75" stroke="#8B4513" stroke-width="3"/>
+  <!-- Club head -->
+  <rect x="52" y="73" width="12" height="4" rx="2" fill="#C0C0C0" stroke="#A0A0A0" stroke-width="1"/>
+  <!-- Flag -->
+  <line x1="85" y1="30" x2="85" y2="80" stroke="#654321" stroke-width="2"/>
+  <polygon points="85,30 95,35 85,40" fill="#FF0000"/>
+</svg>

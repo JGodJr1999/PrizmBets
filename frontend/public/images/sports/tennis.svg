@@ -1,0 +1,15 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="120" fill="transparent"/>
+  <!-- Tennis ball -->
+  <circle cx="60" cy="60" r="25" fill="#ADFF2F" stroke="#32CD32" stroke-width="2"/>
+  <!-- Tennis ball curves -->
+  <path d="M 40 45 Q 60 55 80 45" stroke="white" stroke-width="3" fill="none"/>
+  <path d="M 40 75 Q 60 65 80 75" stroke="white" stroke-width="3" fill="none"/>
+  <!-- Tennis racket -->
+  <ellipse cx="85" cy="35" rx="8" ry="12" fill="none" stroke="#8B4513" stroke-width="2"/>
+  <line x1="85" y1="47" x2="85" y2="65" stroke="#8B4513" stroke-width="3"/>
+  <!-- Racket strings -->
+  <line x1="80" y1="30" x2="90" y2="30" stroke="#DDD" stroke-width="1"/>
+  <line x1="80" y1="35" x2="90" y2="35" stroke="#DDD" stroke-width="1"/>
+  <line x1="80" y1="40" x2="90" y2="40" stroke="#DDD" stroke-width="1"/>
+</svg>

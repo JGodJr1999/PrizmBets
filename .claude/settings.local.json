@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(copy .env.example .env)",
+      "Bash(cp:*)",
+      "Bash(npm install)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(touch:*)",
+      "Bash(timeout 10 npm start)",
+      "Bash(rm:*)",
+      "Bash(pip install:*)",
+      "Bash(set PORT=3001)",
+      "Bash(set PORT=3002)",
+      "Bash(cross-env:*)",
+      "Bash(npm start:*)",
+      "Bash(set PORT=3004)",
+      "Bash(node:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:picks.cbssports.com)",
+      "Bash(timeout:*)",
+      "Bash(tasklist)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}
