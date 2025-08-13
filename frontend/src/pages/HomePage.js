@@ -1,213 +1,257 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import toast from 'react-hot-toast';
-import { Brain, BarChart3, DollarSign, Shield } from 'lucide-react';
-import ParlayBuilder from '../components/Parlay/ParlayBuilder';
-import EvaluationResults from '../components/Results/EvaluationResults';
-import LoadingSpinner from '../components/UI/LoadingSpinner';
-import { apiService } from '../services/api';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import AnimatedHero from '../components/Animations/AnimatedHero';
+import FeatureShowcase from '../components/Animations/FeatureShowcase';
 
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${props => props.theme.colors.background.primary};
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const MainContent = styled.main`
+const FloatingElements = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+`;
+
+const FloatingCircle = styled(motion.div)`
+  position: absolute;
+  border-radius: 50%;
+  background: ${props => props.theme.colors.accent.primary}10;
+  border: 1px solid ${props => props.theme.colors.accent.primary}20;
+`;
+
+const CTASection = styled(motion.section)`
+  padding: ${props => props.theme.spacing.xxl} ${props => props.theme.spacing.xl};
+  text-align: center;
+  background: ${props => props.theme.colors.gradient.card};
+  border-top: 1px solid ${props => props.theme.colors.border.primary};
+  position: relative;
+  z-index: 1;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: ${props => props.theme.spacing.xl};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    padding: ${props => props.theme.spacing.md};
-  }
 `;
 
-const Hero = styled.section`
-  text-align: center;
-  margin-bottom: ${props => props.theme.spacing.xxl};
-  padding: ${props => props.theme.spacing.xxl} 0;
-`;
-
-const HeroTitle = styled.h1`
-  font-size: 3rem;
+const CTATitle = styled(motion.h2)`
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   color: ${props => props.theme.colors.text.primary};
-  margin-bottom: ${props => props.theme.spacing.md};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    font-size: 2rem;
-  }
+  margin-bottom: ${props => props.theme.spacing.lg};
 `;
 
-const HeroSubtitle = styled.p`
+const CTADescription = styled(motion.p)`
   font-size: 1.2rem;
   color: ${props => props.theme.colors.text.secondary};
   max-width: 600px;
-  margin: 0 auto ${props => props.theme.spacing.lg};
+  margin: 0 auto ${props => props.theme.spacing.xl};
   line-height: 1.6;
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    font-size: 1rem;
-  }
 `;
 
-const FeatureGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: ${props => props.theme.spacing.md};
-  margin-bottom: ${props => props.theme.spacing.xxl};
-`;
-
-const FeatureCard = styled.div`
-  background: ${props => props.theme.colors.background.card};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  padding: ${props => props.theme.spacing.lg};
-  text-align: center;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: ${props => props.theme.colors.border.secondary};
-    box-shadow: ${props => props.theme.shadows.sm};
-  }
-`;
-
-const FeatureIcon = styled.div`
-  color: ${props => props.theme.colors.accent.primary};
-  margin-bottom: ${props => props.theme.spacing.md};
-  display: flex;
-  justify-content: center;
-`;
-
-const FeatureTitle = styled.h3`
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 1.1rem;
+const CTAButton = styled(motion.button)`
+  background: ${props => props.theme.colors.gradient.primary};
+  color: ${props => props.theme.colors.background.primary};
+  font-size: 1.2rem;
   font-weight: 600;
-  margin-bottom: ${props => props.theme.spacing.sm};
+  padding: ${props => props.theme.spacing.lg} ${props => props.theme.spacing.xxl};
+  border: none;
+  border-radius: ${props => props.theme.borderRadius.lg};
+  cursor: pointer;
+  box-shadow: ${props => props.theme.shadows.lg};
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      ${props => props.theme.colors.text.primary}20,
+      transparent
+    );
+    transition: left 0.6s ease;
+  }
+  
+  &:hover::before {
+    left: 100%;
+  }
 `;
 
-const FeatureDescription = styled.p`
-  color: ${props => props.theme.colors.text.secondary};
-  font-size: 0.9rem;
-  line-height: 1.5;
-`;
-
-const ResultsSection = styled.section`
-  margin-top: ${props => props.theme.spacing.xxl};
-`;
-
-
-const ErrorMessage = styled.div`
-  background: ${props => props.theme.colors.accent.secondary}20;
-  border: 1px solid ${props => props.theme.colors.accent.secondary};
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.lg};
-  color: ${props => props.theme.colors.accent.secondary};
-  text-align: center;
-  margin: ${props => props.theme.spacing.lg} 0;
+const BackToTopButton = styled(motion.button)`
+  position: fixed;
+  bottom: ${props => props.theme.spacing.xl};
+  right: ${props => props.theme.spacing.xl};
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: ${props => props.theme.colors.gradient.primary};
+  border: none;
+  color: ${props => props.theme.colors.background.primary};
+  cursor: pointer;
+  box-shadow: ${props => props.theme.shadows.lg};
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
 `;
 
 const HomePage = () => {
-  const [evaluation, setEvaluation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const handleEvaluateParlay = async (parlayData) => {
-    setIsLoading(true);
-    setError(null);
-    setEvaluation(null);
+  const handleGetStarted = () => {
+    navigate('/live-sports');
+  };
 
-    try {
-      const result = await apiService.evaluateParlay(parlayData);
-      setEvaluation(result.evaluation);
-      toast.success('Parlay evaluated successfully!');
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to evaluate parlay';
-      setError(errorMessage);
-      toast.error(errorMessage);
-      console.error('Evaluation error:', err);
-    } finally {
-      setIsLoading(false);
+  const handleLearnMore = () => {
+    // Scroll to features section
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const floatingVariants = {
+    animate: {
+      y: [0, -20, 0],
+      rotate: [0, 180, 360],
+      transition: {
+        duration: 10,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }
+    }
+  };
+
+  const ctaVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const buttonHover = {
+    scale: 1.05,
+    y: -2,
+    transition: {
+      duration: 0.2,
+      ease: "easeInOut"
+    }
+  };
+
+  const shimmerVariants = {
+    hover: {
+      backgroundPosition: ['200% 0', '-200% 0'],
+      transition: {
+        duration: 1.5,
+        ease: "easeInOut"
+      }
     }
   };
 
   return (
     <PageContainer>
-      <MainContent>
-        <Hero>
-          <HeroTitle>AI-Powered Sports Betting Intelligence</HeroTitle>
-          <HeroSubtitle>
-            Build smarter parlays with our AI evaluation system. Get instant analysis, 
-            risk assessment, and odds comparison to make informed betting decisions.
-          </HeroSubtitle>
-        </Hero>
-
-        <FeatureGrid>
-          <FeatureCard>
-            <FeatureIcon>
-              <Brain size={32} />
-            </FeatureIcon>
-            <FeatureTitle>AI Analysis</FeatureTitle>
-            <FeatureDescription>
-              Advanced algorithms analyze your parlays using historical data and trends
-            </FeatureDescription>
-          </FeatureCard>
-          
-          <FeatureCard>
-            <FeatureIcon>
-              <BarChart3 size={32} />
-            </FeatureIcon>
-            <FeatureTitle>Risk Assessment</FeatureTitle>
-            <FeatureDescription>
-              Get detailed risk factors and confidence levels for each bet
-            </FeatureDescription>
-          </FeatureCard>
-          
-          <FeatureCard>
-            <FeatureIcon>
-              <DollarSign size={32} />
-            </FeatureIcon>
-            <FeatureTitle>Odds Comparison</FeatureTitle>
-            <FeatureDescription>
-              Find the best odds across multiple sportsbooks to maximize returns
-            </FeatureDescription>
-          </FeatureCard>
-          
-          <FeatureCard>
-            <FeatureIcon>
-              <Shield size={32} />
-            </FeatureIcon>
-            <FeatureTitle>Smart Recommendations</FeatureTitle>
-            <FeatureDescription>
-              Receive actionable insights and betting strategy recommendations
-            </FeatureDescription>
-          </FeatureCard>
-        </FeatureGrid>
-
-        <ParlayBuilder 
-          onEvaluate={handleEvaluateParlay}
-          isLoading={isLoading}
+      <FloatingElements>
+        <FloatingCircle
+          variants={floatingVariants}
+          animate="animate"
+          style={{
+            width: '100px',
+            height: '100px',
+            top: '20%',
+            left: '10%',
+          }}
         />
+        <FloatingCircle
+          variants={floatingVariants}
+          animate="animate"
+          style={{
+            width: '60px',
+            height: '60px',
+            top: '60%',
+            right: '15%',
+            animationDelay: '2s'
+          }}
+        />
+        <FloatingCircle
+          variants={floatingVariants}
+          animate="animate"
+          style={{
+            width: '80px',
+            height: '80px',
+            bottom: '20%',
+            left: '20%',
+            animationDelay: '4s'
+          }}
+        />
+      </FloatingElements>
 
-        {isLoading && (
-          <LoadingSpinner 
-            text="Analyzing your parlay..."
-            subtext="Our AI is evaluating each bet for optimal results"
-          />
-        )}
-        
-        {error && (
-          <ErrorMessage>
-            <strong>Error:</strong> {error}
-          </ErrorMessage>
-        )}
+      <AnimatedHero 
+        onGetStarted={handleGetStarted}
+        onLearnMore={handleLearnMore}
+      />
 
-        {evaluation && (
-          <ResultsSection>
-            <EvaluationResults evaluation={evaluation} />
-          </ResultsSection>
-        )}
-      </MainContent>
+      <div id="features">
+        <FeatureShowcase />
+      </div>
+
+      <CTASection
+        variants={ctaVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        <CTATitle variants={ctaVariants}>
+          Ready to Start Winning?
+        </CTATitle>
+        <CTADescription variants={ctaVariants}>
+          Join thousands of smart bettors who are tracking their bets and maximizing their success. 
+          Start managing your betting portfolio today.
+        </CTADescription>
+        <CTAButton
+          onClick={handleGetStarted}
+          whileHover={buttonHover}
+          whileTap={{ scale: 0.95 }}
+          variants={shimmerVariants}
+        >
+          View Live Sports →
+        </CTAButton>
+      </CTASection>
+
+      <BackToTopButton
+        onClick={scrollToTop}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 2 }}
+      >
+        ↑
+      </BackToTopButton>
     </PageContainer>
   );
 };

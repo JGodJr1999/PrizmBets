@@ -247,7 +247,7 @@ const LoginPage = () => {
       <LoginCard>
         <Logo>
           <Brain size={32} />
-          SmartBets 2.0
+          PrizmBets
         </Logo>
         
         <Title>Welcome Back</Title>

@@ -1,4 +1,4 @@
-# Stripe Business Account Setup Guide
+# Stripe Business Account Setup Guide for PrizmBets
 
 ## Quick Answers
 - **Do you need a business bank account before creating Stripe?** NO! You can create your Stripe account now and add the bank account later.

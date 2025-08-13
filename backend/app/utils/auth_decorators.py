@@ -350,3 +350,36 @@ def validate_session_token():
         return True
     except Exception:
         return False
+
+# Enhanced JWT decorator with proper g object population
+def jwt_required(f):
+    """Custom JWT decorator that properly sets up g object for routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            # Use Flask-JWT-Extended's verification
+            from flask import g
+            from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+            
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+            
+            if not user_id:
+                return jsonify({
+                    'error': 'Invalid token',
+                    'message': 'Please provide a valid token'
+                }), 401
+            
+            # Set user ID in g object for route access
+            g.current_user_id = user_id
+            
+            return f(*args, **kwargs)
+            
+        except Exception as e:
+            logger.error(f"JWT verification failed: {str(e)}")
+            return jsonify({
+                'error': 'Authentication failed', 
+                'message': 'Please log in again'
+            }), 401
+    
+    return decorated_function

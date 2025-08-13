@@ -1,16 +1,16 @@
 @echo off
 echo ========================================
-echo    Starting SmartBets 2.0 Full Stack
+echo    Starting PrizmBets Full Stack
 echo ========================================
 echo.
 
 echo Starting Backend Server...
-start "SmartBets Backend" cmd /k start-backend.bat
+start "PrizmBets Backend" cmd /k start-backend.bat
 
 timeout /t 5 /nobreak > nul
 
 echo Starting Frontend Application...
-start "SmartBets Frontend" cmd /k start-frontend.bat
+start "PrizmBets Frontend" cmd /k start-frontend.bat
 
 echo.
 echo ========================================

@@ -1,8 +1,8 @@
-# SmartBets 2.0 - Live Sports Data Setup Guide
+# PrizmBets - Live Sports Data Setup Guide
 
 ## Getting Real Live Sports Data
 
-SmartBets 2.0 uses **The Odds API** for real-time sports betting data. By default, the app runs in **Demo Mode** with mock data.
+PrizmBets uses **The Odds API** for real-time sports betting data. By default, the app runs in **Demo Mode** with mock data.
 
 ### Quick Setup (5 minutes)
 

@@ -39,7 +39,7 @@ npm test       # Run tests
 
 ## Architecture Overview
 
-SmartBets 2.0 is a full-stack sports betting intelligence platform with a Flask backend and React frontend.
+Prizm Bets is a full-stack sports betting management platform with a Flask backend and React frontend.
 
 ### Backend Structure (`backend/`)
 - **Flask API**: Main server runs on port 5001 with CORS configured for frontend

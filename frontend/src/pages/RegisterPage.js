@@ -283,7 +283,7 @@ const RegisterPage = () => {
       <RegisterCard>
         <Logo>
           <Brain size={32} />
-          SmartBets 2.0
+          PrizmBets
         </Logo>
         
         <Title>Create Account</Title>

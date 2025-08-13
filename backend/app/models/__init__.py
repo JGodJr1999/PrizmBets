@@ -5,6 +5,7 @@ Exports all database models for easy importing
 
 from .user import db, User, UserProfile, BettingHistory, UserSession
 from .parlay import Parlay
+from .pickem_pools import PickEmPool, PoolMembership, NFLWeek, NFLGame, PoolPick, WeeklyStandings
 
 __all__ = [
     'db',
@@ -12,5 +13,11 @@ __all__ = [
     'UserProfile', 
     'BettingHistory', 
     'UserSession',
-    'Parlay'
+    'Parlay',
+    'PickEmPool',
+    'PoolMembership',
+    'NFLWeek',
+    'NFLGame',
+    'PoolPick',
+    'WeeklyStandings'
 ]

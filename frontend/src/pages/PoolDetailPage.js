@@ -413,7 +413,7 @@ const PoolDetailPage = () => {
 
   const loadWeeklyGames = async (week) => {
     try {
-      const response = await fetch(`http://localhost:5004/api/pickem/nfl/weeks/${week.week_number}/games`);
+      const response = await fetch(`http://localhost:5001/api/pickem/nfl/weeks/${week.week_number}/games`);
       
       if (response.ok) {
         const data = await response.json();

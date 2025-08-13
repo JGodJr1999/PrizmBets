@@ -4,14 +4,12 @@ Comprehensive model definitions for pool management, picks, and standings
 """
 
 from datetime import datetime, timezone
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey, JSON, Numeric, Index, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
+from .user import db  # Import the shared db instance
 import uuid
 import secrets
 import string
-
-db = SQLAlchemy()
 
 class PickEmPool(db.Model):
     """Model for NFL Pick'em Pools"""
@@ -43,8 +41,7 @@ class PickEmPool(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    creator = relationship('User', backref='created_pools')
+    # Relationships (using string references to avoid circular imports)
     memberships = relationship('PoolMembership', back_populates='pool', cascade='all, delete-orphan')
     
     def __init__(self, **kwargs):
@@ -107,7 +104,6 @@ class PoolMembership(db.Model):
     
     # Relationships
     pool = relationship('PickEmPool', back_populates='memberships')
-    user = relationship('User', backref='pool_memberships')
     
     # Indexes
     __table_args__ = (
@@ -300,7 +296,6 @@ class PoolPick(db.Model):
     
     # Relationships
     pool = relationship('PickEmPool')
-    user = relationship('User')
     game = relationship('NFLGame', back_populates='picks')
     
     # Constraints and indexes
@@ -367,7 +362,6 @@ class WeeklyStandings(db.Model):
     
     # Relationships
     pool = relationship('PickEmPool')
-    user = relationship('User')
     week = relationship('NFLWeek')
     
     # Constraints and indexes

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star } from 'lucide-react';
+import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload } from 'lucide-react';
+import UserColumnMenu from './UserColumnMenu';
 
 const HeaderContainer = styled.header`
   background: ${props => props.theme.colors.background.primary};
@@ -344,7 +345,7 @@ const Header = ({ user = null, onLogout }) => {
       <HeaderContent>
         <Logo onClick={handleLogoClick}>
           <Brain size={28} />
-          SmartBets 2.0
+          Prizm Bets
           <BetaTag>BETA</BetaTag>
         </Logo>
         
@@ -367,6 +368,30 @@ const Header = ({ user = null, onLogout }) => {
           >
             <Zap size={16} />
             Live Sports
+          </NavItem>
+          
+          <NavItem 
+            active={isActive('/projections')}
+            onClick={() => handleNavigation('/projections')}
+          >
+            <BarChart3 size={16} />
+            AI's Top 5
+          </NavItem>
+          
+          <NavItem 
+            active={isActive('/analytics')}
+            onClick={() => handleNavigation('/analytics')}
+          >
+            <TrendingUp size={16} />
+            Analytics
+          </NavItem>
+          
+          <NavItem 
+            active={isActive('/betting-data')}
+            onClick={() => handleNavigation('/betting-data')}
+          >
+            <Upload size={16} />
+            Upload Data
           </NavItem>
           
           <NavItem 
@@ -401,7 +426,7 @@ const Header = ({ user = null, onLogout }) => {
                 active={isActive('/dashboard')}
                 onClick={() => handleNavigation('/dashboard')}
               >
-                <BarChart3 size={16} />
+                <Brain size={16} />
                 Dashboard
               </NavItem>
               <NavItem 
@@ -415,16 +440,11 @@ const Header = ({ user = null, onLogout }) => {
           )}
           
           {user ? (
-            <UserMenu>
-              <UserInfo onClick={() => handleNavigation('/profile')}>
-                <User size={16} />
-                {user.name || 'User'}
-              </UserInfo>
-              <LogoutButton onClick={onLogout}>
-                <LogOut size={16} />
-                Logout
-              </LogoutButton>
-            </UserMenu>
+            <UserColumnMenu 
+              user={user}
+              onNavigate={handleNavigation}
+              onLogout={onLogout}
+            />
           ) : (
             <NavItem 
               active={isActive('/login')}

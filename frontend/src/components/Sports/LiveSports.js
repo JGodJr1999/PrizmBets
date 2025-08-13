@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { Star, TrendingUp, Clock, ExternalLink, Calendar, PauseCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -631,7 +631,7 @@ const SeasonSubtitle = styled.p`
   font-size: 1rem;
 `;
 
-const sports = [
+const sportsData = [
   { key: 'all', name: 'All Sports', active: true },
   { key: 'wnba', name: 'WNBA', active: true },
   { key: 'nfl', name: 'NFL', active: true },
@@ -646,6 +646,10 @@ const sports = [
   { key: 'golf', name: 'Golf', active: true }
 ];
 
+// Simple cache to store API responses for better performance
+const apiCache = new Map();
+const CACHE_DURATION = 30000; // 30 seconds
+
 const LiveSports = () => {
   const [selectedSport, setSelectedSport] = useState('all');
   const [games, setGames] = useState([]);
@@ -659,11 +663,19 @@ const LiveSports = () => {
   const [gameBetAmounts, setGameBetAmounts] = useState({}); // For regular game bets
   const [isDemoMode, setIsDemoMode] = useState(false);
 
+  // Memoize sports options to prevent unnecessary re-renders
+  const sportsOptions = useMemo(() => sportsData, []);
+
+  // Memoize filtered games to improve performance
+  const filteredGames = useMemo(() => {
+    return games.filter(game => game && (game.teams || (game.home_team && game.away_team)));
+  }, [games]);
+
   useEffect(() => {
     loadLiveOdds(selectedSport);
   }, [selectedSport]);
 
-  const loadLiveOdds = async (sport) => {
+  const loadLiveOdds = useCallback(async (sport) => {
     setLoading(true);
     setError(null);
     setSeasonStatus(null);
@@ -679,8 +691,40 @@ const LiveSports = () => {
         endpoint = `http://localhost:5001/api/odds/comparison/${sport}`;
       }
       
+      // Check cache first
+      const cacheKey = `${sport}_${endpoint}`;
+      const cached = apiCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+        console.log('Using cached data for:', sport);
+        const data = cached.data;
+        setGames(data.games || []);
+        if (data.demo_mode === true || data.data_source === 'mock' || data.data_source === 'demo') {
+          setIsDemoMode(true);
+        } else {
+          setIsDemoMode(false);
+        }
+        if (data.season_status && data.season_status !== 'active') {
+          setSeasonStatus(data.season_status);
+          setSeasonMessage(data.season_message);
+          if (data.has_prop_bets && data.prop_bets) {
+            setPropBets(data.prop_bets);
+            setHasPropBets(true);
+          }
+        }
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(endpoint);
       const data = await response.json();
+      
+      // Cache the response
+      apiCache.set(cacheKey, {
+        data: data,
+        timestamp: now
+      });
       
       if (data.success) {
         setGames(data.games || []);
@@ -727,7 +771,7 @@ const LiveSports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const formatOdds = (odds) => {
     if (odds > 0) return `+${odds}`;
@@ -895,7 +939,7 @@ const LiveSports = () => {
       )}
 
       <SportSelector>
-        {sports.map((sport) => (
+        {sportsOptions.map((sport) => (
           <SportButton
             key={sport.key}
             active={selectedSport === sport.key}
@@ -1012,7 +1056,7 @@ const LiveSports = () => {
       )}
 
       <GamesList>
-        {games.map((game) => {
+        {filteredGames.map((game) => {
           // Check if game has live data and should use LiveGameScoreCard
           if (game.live_data) {
             return <LiveGameScoreCard key={game.id} game={game} />;
@@ -1220,4 +1264,5 @@ const LiveSports = () => {
   );
 };
 
-export default LiveSports;
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(LiveSports);

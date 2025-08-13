@@ -179,7 +179,7 @@ const PickEmPage = () => {
   const fetchUserPools = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:5004/api/pickem/pools', {
+      const response = await fetch('http://localhost:5001/api/pickem/pools', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -222,7 +222,7 @@ const PickEmPage = () => {
   const handleCreatePool = async (poolData) => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:5004/api/pickem/pools', {
+      const response = await fetch('http://localhost:5001/api/pickem/pools', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const PickEmPage = () => {
   const handleJoinPool = async (inviteCode) => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:5004/api/pickem/pools/join', {
+      const response = await fetch('http://localhost:5001/api/pickem/pools/join', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

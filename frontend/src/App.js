@@ -7,6 +7,7 @@ import { theme } from './styles/theme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Layout/Header';
 import HomePage from './pages/HomePage';
+import ParlayPage from './pages/ParlayPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -15,10 +16,12 @@ import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import LiveSportsPage from './pages/LiveSportsPage';
-import PickEmPage from './pages/PickEmPage';
 import PickEmPageDemo from './pages/PickEmPageDemo';
 import PoolDetailPage from './pages/PoolDetailPage';
 import FantasyComingSoonPage from './pages/FantasyComingSoonPage';
+import SportsProjectionsPage from './pages/SportsProjectionsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import BettingDataPage from './pages/BettingDataPage';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
@@ -108,12 +111,28 @@ const AppContent = () => {
           } 
         />
         <Route 
+          path="/parlay" 
+          element={<ParlayPage />}
+        />
+        <Route 
           path="/subscription" 
           element={<SubscriptionPage />}
         />
         <Route 
           path="/live-sports" 
           element={<LiveSportsPage />}
+        />
+        <Route 
+          path="/projections" 
+          element={<SportsProjectionsPage />}
+        />
+        <Route 
+          path="/analytics" 
+          element={<AnalyticsPage />}
+        />
+        <Route 
+          path="/betting-data" 
+          element={<BettingDataPage />}
         />
         <Route 
           path="/pick-em" 

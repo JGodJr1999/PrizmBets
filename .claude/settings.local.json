@@ -32,7 +32,17 @@
       "Bash(C:UserscentrOneDriveDocumentsSmartBets2.0git-push.bat)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(.start-all.bat)",
+      "Bash(cmd /c:*)",
+      "Bash(.\\start-all.bat)",
+      "Bash(start-all.bat)",
+      "Bash(cmd.exe /c \"C:\\Users\\centr\\OneDrive\\Documents\\SmartBets2.0\\start-all.bat\")",
+      "WebFetch(domain:pickfinder.app)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase use:*)",
+      "Bash(firebase:*)",
+      "Bash(copy backend.env.example backend.env)"
     ],
     "deny": []
   }

@@ -1,15 +1,20 @@
 """
-Initialize all databases for SmartBets 2.0
+Initialize all databases for PrizmBets
 Creates tables and adds test data for development
 """
 
 import os
 import sys
 from datetime import datetime, timedelta
+try:
+    from datetime import UTC
+except ImportError:
+    import datetime as dt
+    UTC = dt.timezone.utc
 from app import create_app
 from app.models.user import db, User, UserProfile
 from app.models.parlay import Parlay
-from app.models.pickem_pools import PickEmPool, PoolMembership, NFLGame, PoolPick
+from app.models.pickem_pools import PickEmPool, PoolMembership, NFLGame, NFLWeek, PoolPick
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -21,15 +26,14 @@ def init_database():
     
     with app.app_context():
         try:
+            # Drop and recreate all tables for clean init
+            logger.info("Dropping existing tables...")
+            db.drop_all()
+            
             # Create all tables
             logger.info("Creating database tables...")
             db.create_all()
             logger.info("Database tables created successfully!")
-            
-            # Check if we already have data
-            if User.query.first():
-                logger.info("Database already contains data. Skipping initialization.")
-                return
             
             # Create test users
             logger.info("Creating test users...")
@@ -105,7 +109,7 @@ def init_database():
             ]
             
             parlay1 = Parlay(
-                parlay_id=f"parlay_{admin_user.id}_{datetime.utcnow().timestamp()}",
+                parlay_id=f"parlay_{admin_user.id}_{datetime.now(UTC).timestamp()}",
                 name="Sample Parlay",
                 bets=bets_data,
                 total_amount=100.00,
@@ -139,37 +143,71 @@ def init_database():
                 member = PoolMembership(
                     pool_id=pool.id,
                     user_id=user.id,
-                    role='admin' if user.id == admin_user.id else 'member',
-                    total_points=0,
-                    correct_picks=0,
-                    total_picks=0
+                    display_name=user.name,
+                    is_admin=(user.id == admin_user.id)
                 )
                 db.session.add(member)
             
             db.session.commit()
             
+            # Create NFL Weeks for current season
+            logger.info("Creating NFL weeks for current season...")
+            current_season = datetime.now().year
+            
+            # Create 18 regular season weeks + 4 playoff weeks
+            for week_num in range(1, 19):  # Weeks 1-18
+                start_date = datetime.now(UTC) + timedelta(weeks=week_num-1)
+                week = NFLWeek(
+                    week_number=week_num,
+                    season_year=current_season,
+                    week_type='regular',
+                    start_date=start_date,
+                    pick_deadline=start_date + timedelta(hours=18),  # 6PM Thursday
+                    end_date=start_date + timedelta(days=6),
+                    is_active=(week_num == 1)  # Make week 1 active
+                )
+                db.session.add(week)
+            
+            db.session.commit()
+            
+            # Get the created weeks for games
+            week1 = NFLWeek.query.filter_by(week_number=1, season_year=current_season).first()
+            week2 = NFLWeek.query.filter_by(week_number=2, season_year=current_season).first()
+            
             # Create sample NFL games
             logger.info("Creating sample NFL games...")
             games = [
                 {
-                    'week_number': 1,
-                    'home_team': 'Chiefs',
-                    'away_team': 'Lions',
+                    'week_id': week1.id,
+                    'home_team': 'Kansas City Chiefs',
+                    'away_team': 'Detroit Lions', 
                     'home_spread': -3.5,
-                    'away_spread': 3.5,
-                    'over_under': 48.5,
-                    'game_time': datetime.utcnow() + timedelta(days=3),
-                    'status': 'scheduled'
+                    'total_points': 48.5,
+                    'game_time': datetime.now(UTC) + timedelta(days=3)
                 },
                 {
-                    'week_number': 1,
-                    'home_team': 'Cowboys',
-                    'away_team': 'Giants',
+                    'week_id': week1.id,
+                    'home_team': 'Dallas Cowboys',
+                    'away_team': 'New York Giants',
                     'home_spread': -7.0,
-                    'away_spread': 7.0,
-                    'over_under': 44.5,
-                    'game_time': datetime.utcnow() + timedelta(days=3, hours=3),
-                    'status': 'scheduled'
+                    'total_points': 44.5,
+                    'game_time': datetime.now(UTC) + timedelta(days=3, hours=3)
+                },
+                {
+                    'week_id': week1.id,
+                    'home_team': 'Buffalo Bills',
+                    'away_team': 'Miami Dolphins',
+                    'home_spread': -4.0,
+                    'total_points': 46.0,
+                    'game_time': datetime.now(UTC) + timedelta(days=4)
+                },
+                {
+                    'week_id': week2.id,
+                    'home_team': 'Green Bay Packers',
+                    'away_team': 'Chicago Bears',
+                    'home_spread': -6.5,
+                    'total_points': 42.0,
+                    'game_time': datetime.now(UTC) + timedelta(days=10)
                 }
             ]
             

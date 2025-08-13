@@ -81,13 +81,12 @@ def create_app(config_name=None):
     from app.routes.auth import auth_bp
     from app.routes.payments import payments_bp
     from app.routes.updates import updates_bp
-    # TODO: Fix pickem blueprint endpoint conflict
-    # from app.routes.pickem import pickem_bp
+    from app.routes.pickem_simple import pickem_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(payments_bp, url_prefix='/api/payments')
     app.register_blueprint(updates_bp)
-    # app.register_blueprint(pickem_bp)
+    app.register_blueprint(pickem_bp)
     
     # Add security headers
     @app.after_request

@@ -1,37 +1,49 @@
 export const theme = {
   colors: {
-    // Minimal dark theme
+    // Professional black theme with gold accents
     background: {
-      primary: '#000000',
-      secondary: '#0a0a0a',
-      tertiary: '#141414',
-      card: '#1a1a1a',
-      hover: '#252525'
+      primary: '#0a0a0a',      // Pure black
+      secondary: '#1a1a1a',    // Dark gray
+      tertiary: '#2a2a2a',     // Card background
+      card: '#1e1e1e',         // Professional card background
+      hover: '#333333'         // Hover state
     },
     text: {
       primary: '#ffffff',
-      secondary: '#a0a0a0',
-      muted: '#707070',
-      accent: '#00d4aa'
+      secondary: '#cccccc',
+      muted: '#888888',
+      accent: '#FFD700'        // Gold accent
     },
     accent: {
-      primary: '#00d4aa',
+      primary: '#FFD700',      // Gold primary
       secondary: '#ff6b6b',
-      warning: '#ffa726',
-      success: '#66bb6a'
+      warning: '#FFA500',      // Orange
+      success: '#32CD32'       // Lime green
     },
     border: {
-      primary: '#1a1a1a',
-      secondary: '#2a2a2a',
-      accent: '#00d4aa'
+      primary: '#333333',
+      secondary: '#444444',
+      accent: '#FFD700'        // Gold border
     },
     betting: {
-      positive: '#66bb6a',
+      positive: '#32CD32',     // Lime green
       negative: '#ff6b6b',
-      neutral: '#ffa726',
-      high: '#00d4aa',
-      medium: '#ffa726',
+      neutral: '#FFA500',      // Orange
+      high: '#FFD700',         // Gold for high confidence
+      medium: '#FFA500',       // Orange for medium
       low: '#ff6b6b'
+    },
+    gradient: {
+      primary: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+      card: 'linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%)',
+      accent: 'linear-gradient(135deg, #FFD700 0%, #DAA520 100%)',
+      danger: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    },
+    stats: {
+      excellent: '#FFD700',    // Gold for excellent stats
+      good: '#32CD32',         // Lime green for good stats  
+      average: '#FFA500',      // Orange for average
+      poor: '#ef4444'          // Red for poor stats
     }
   },
   fonts: {
