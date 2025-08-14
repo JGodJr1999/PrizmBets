@@ -42,7 +42,8 @@
       "Bash(firebase projects:list:*)",
       "Bash(firebase use:*)",
       "Bash(firebase:*)",
-      "Bash(copy backend.env.example backend.env)"
+      "Bash(copy backend.env.example backend.env)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": []
   }
