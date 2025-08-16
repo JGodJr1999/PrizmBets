@@ -86,8 +86,8 @@ const authReducer = (state, action) => {
 };
 
 // Storage utilities
-const TOKEN_STORAGE_KEY = 'smartbets_auth_tokens';
-const USER_STORAGE_KEY = 'smartbets_user';
+const TOKEN_STORAGE_KEY = 'prizmbets_auth_tokens';
+const USER_STORAGE_KEY = 'prizmbets_user';
 
 const storeTokens = (accessToken, refreshToken, rememberMe = false) => {
   const storage = rememberMe ? localStorage : sessionStorage;
@@ -285,7 +285,7 @@ export const AuthProvider = ({ children }) => {
       storeTokens(response.access_token, response.refresh_token, false);
       storeUser(response.user, false);
       
-      toast.success(`Welcome to SmartBets, ${response.user.name}!`);
+      toast.success(`Welcome to PrizmBets, ${response.user.name}!`);
       return { success: true };
       
     } catch (error) {

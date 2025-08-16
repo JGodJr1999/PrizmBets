@@ -1,5 +1,5 @@
 """
-Data Analytics Manager Subagents for SmartBets 2.0
+Data Analytics Manager Subagents for PrizmBets
 Specialized analytics agents for user behavior, revenue forecasting, and market intelligence
 """
 

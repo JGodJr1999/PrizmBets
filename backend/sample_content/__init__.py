@@ -1,0 +1,1 @@
+# Sample content package for PrizmBets educational materials

@@ -1,5 +1,5 @@
 """
-Content Manager Agent for SmartBets 2.0
+Content Manager Agent for PrizmBets
 Sports data curation, odds management, and content optimization
 """
 

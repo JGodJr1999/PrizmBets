@@ -22,6 +22,9 @@ import FantasyComingSoonPage from './pages/FantasyComingSoonPage';
 import SportsProjectionsPage from './pages/SportsProjectionsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import BettingDataPage from './pages/BettingDataPage';
+import TutorialsPage from './pages/TutorialsPage';
+import DemoParlaysPage from './pages/DemoParlaysPage';
+import AdminPage from './pages/AdminPage';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
@@ -145,6 +148,22 @@ const AppContent = () => {
         <Route 
           path="/fantasy-coming-soon" 
           element={<FantasyComingSoonPage />}
+        />
+        <Route 
+          path="/tutorials" 
+          element={<TutorialsPage />}
+        />
+        <Route 
+          path="/demo-parlays" 
+          element={<DemoParlaysPage />}
+        />
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <AdminPage />
+            </ProtectedRoute>
+          }
         />
         {/* Catch-all route for 404 errors */}
         <Route path="*" element={<NotFoundPage />} />

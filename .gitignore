@@ -37,6 +37,7 @@ backend/instance/
 *.swo
 *~
 .DS_Store
+._*
 Thumbs.db
 
 # Logs

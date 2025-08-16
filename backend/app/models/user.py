@@ -273,3 +273,154 @@ class UserSession(db.Model):
     
     def __repr__(self):
         return f'<UserSession {self.id} - User {self.user_id}>'
+
+
+class UserUsage(db.Model):
+    """Track daily usage for free tier limits"""
+    __tablename__ = 'user_usage'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    
+    # Usage tracking
+    date = Column(DateTime, nullable=False)  # Date for this usage record
+    parlay_evaluations = Column(Integer, default=0, nullable=False)  # Daily parlay count
+    odds_comparisons = Column(Integer, default=0, nullable=False)    # Daily odds checks
+    api_calls = Column(Integer, default=0, nullable=False)           # Total API usage
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), 
+                       onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    # Relationships
+    user = relationship("User")
+    
+    # Database constraints
+    __table_args__ = (
+        Index('idx_user_usage_user_date', 'user_id', 'date'),
+        Index('idx_user_usage_date', 'date'),
+        # Ensure one record per user per day
+        db.UniqueConstraint('user_id', 'date', name='unique_user_daily_usage')
+    )
+    
+    @staticmethod
+    def get_or_create_today(user_id):
+        """Get or create today's usage record for a user (thread-safe)"""
+        from sqlalchemy import func
+        from sqlalchemy.exc import IntegrityError
+        today = datetime.now(timezone.utc).date()
+        
+        # First try to get existing record
+        usage = UserUsage.query.filter(
+            UserUsage.user_id == user_id,
+            func.date(UserUsage.date) == today
+        ).first()
+        
+        if not usage:
+            # Create new record with error handling for race conditions
+            try:
+                usage = UserUsage(
+                    user_id=user_id,
+                    date=datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                )
+                db.session.add(usage)
+                db.session.commit()
+            except IntegrityError:
+                # Another thread created the record, rollback and fetch it
+                db.session.rollback()
+                usage = UserUsage.query.filter(
+                    UserUsage.user_id == user_id,
+                    func.date(UserUsage.date) == today
+                ).first()
+        
+        return usage
+    
+    def increment_parlay_usage(self):
+        """Increment parlay evaluation count"""
+        self.parlay_evaluations += 1
+        self.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        return self.parlay_evaluations
+    
+    def increment_odds_usage(self):
+        """Increment odds comparison count"""
+        self.odds_comparisons += 1
+        self.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        return self.odds_comparisons
+    
+    def can_use_feature(self, feature_type, user_tier='free'):
+        """Check if user can use a feature based on tier limits"""
+        limits = {
+            'free': {
+                'parlay_evaluations': 3,
+                'odds_comparisons': 10
+            },
+            'pro': {
+                'parlay_evaluations': -1,  # -1 means unlimited
+                'odds_comparisons': -1
+            },
+            'premium': {
+                'parlay_evaluations': -1,
+                'odds_comparisons': -1
+            }
+        }
+        
+        if user_tier not in limits:
+            user_tier = 'free'
+        
+        limit = limits[user_tier].get(feature_type, 0)
+        
+        # Unlimited usage
+        if limit == -1:
+            return True
+        
+        # Check current usage
+        current_usage = getattr(self, feature_type, 0)
+        return current_usage < limit
+    
+    def get_remaining_usage(self, feature_type, user_tier='free'):
+        """Get remaining usage for a feature"""
+        limits = {
+            'free': {
+                'parlay_evaluations': 3,
+                'odds_comparisons': 10
+            },
+            'pro': {
+                'parlay_evaluations': -1,
+                'odds_comparisons': -1
+            },
+            'premium': {
+                'parlay_evaluations': -1,
+                'odds_comparisons': -1
+            }
+        }
+        
+        if user_tier not in limits:
+            user_tier = 'free'
+        
+        limit = limits[user_tier].get(feature_type, 0)
+        
+        # Unlimited usage
+        if limit == -1:
+            return -1
+        
+        current_usage = getattr(self, feature_type, 0)
+        return max(0, limit - current_usage)
+    
+    def to_dict(self):
+        """Convert usage to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'date': self.date.isoformat() if self.date else None,
+            'parlay_evaluations': self.parlay_evaluations,
+            'odds_comparisons': self.odds_comparisons,
+            'api_calls': self.api_calls,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<UserUsage {self.user_id} - {self.date.strftime("%Y-%m-%d")}>'

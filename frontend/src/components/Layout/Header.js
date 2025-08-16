@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload } from 'lucide-react';
+import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
 
 const HeaderContainer = styled.header`
@@ -395,6 +395,22 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
           
           <NavItem 
+            active={isActive('/tutorials')}
+            onClick={() => handleNavigation('/tutorials')}
+          >
+            <BookOpen size={16} />
+            Tutorials
+          </NavItem>
+          
+          <NavItem 
+            active={isActive('/demo-parlays')}
+            onClick={() => handleNavigation('/demo-parlays')}
+          >
+            <Lightbulb size={16} />
+            Demo Parlays
+          </NavItem>
+          
+          <NavItem 
             active={isActive('/pick-em')}
             onClick={() => handleNavigation('/pick-em')}
           >
@@ -436,6 +452,15 @@ const Header = ({ user = null, onLogout }) => {
                 <Calendar size={16} />
                 History
               </NavItem>
+              {user.role === 'admin' && (
+                <NavItem 
+                  active={isActive('/admin')}
+                  onClick={() => handleNavigation('/admin')}
+                >
+                  <Crown size={16} />
+                  Admin
+                </NavItem>
+              )}
             </>
           )}
           

@@ -1,0 +1,126 @@
+{
+  "name": "PrizmBets Backend",
+  "description": "Advanced sports betting analytics and AI-powered parlay evaluation platform",
+  "repository": "https://github.com/your-username/prizmbets-app",
+  "logo": "https://prizmbets.app/logo.png",
+  "keywords": ["flask", "sports", "betting", "analytics", "ai"],
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:standard-0",
+      "options": {
+        "version": "15"
+      }
+    },
+    {
+      "plan": "heroku-redis:premium-0"
+    },
+    {
+      "plan": "sendgrid:starter"
+    },
+    {
+      "plan": "papertrail:choklad"
+    },
+    {
+      "plan": "scheduler:standard"
+    }
+  ],
+  "env": {
+    "FLASK_ENV": {
+      "description": "Flask environment",
+      "value": "production",
+      "required": true
+    },
+    "SECRET_KEY": {
+      "description": "Flask secret key for session security",
+      "generator": "secret",
+      "required": true
+    },
+    "JWT_SECRET_KEY": {
+      "description": "JWT secret key for token security",
+      "generator": "secret",
+      "required": true
+    },
+    "ALLOWED_ORIGINS": {
+      "description": "Allowed CORS origins",
+      "value": "https://prizmbets.app,https://www.prizmbets.app",
+      "required": true
+    },
+    "FRONTEND_URL": {
+      "description": "Frontend application URL",
+      "value": "https://prizmbets.app",
+      "required": true
+    },
+    "FORCE_HTTPS": {
+      "description": "Force HTTPS redirects",
+      "value": "true",
+      "required": true
+    },
+    "API_RATE_LIMIT": {
+      "description": "API rate limit per hour",
+      "value": "500",
+      "required": false
+    },
+    "STRIPE_PUBLISHABLE_KEY": {
+      "description": "Stripe publishable key for payments",
+      "required": false
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret key for payments",
+      "required": false
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "description": "Stripe webhook secret for event verification",
+      "required": false
+    },
+    "ODDS_API_KEY": {
+      "description": "Sports odds API key",
+      "required": false
+    },
+    "SPORTS_API_KEY": {
+      "description": "Sports data API key",
+      "required": false
+    },
+    "SENTRY_DSN": {
+      "description": "Sentry DSN for error tracking",
+      "required": false
+    },
+    "LOG_LEVEL": {
+      "description": "Application log level",
+      "value": "INFO",
+      "required": false
+    }
+  },
+  "scripts": {
+    "postdeploy": "python manage.py db upgrade && python init_production_db.py"
+  },
+  "environments": {
+    "production": {
+      "addons": [
+        "heroku-postgresql:standard-2",
+        "heroku-redis:premium-2"
+      ]
+    },
+    "staging": {
+      "addons": [
+        "heroku-postgresql:hobby-dev",
+        "heroku-redis:hobby-dev"
+      ]
+    }
+  }
+}

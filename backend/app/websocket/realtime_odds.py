@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Real-time Odds WebSocket System for SmartBets 2.0
+Real-time Odds WebSocket System for PrizmBets
 Provides live odds updates to connected clients
 """
 
@@ -49,7 +49,7 @@ class RealTimeOddsServer:
         # Send welcome message
         welcome_msg = {
             'type': 'welcome',
-            'message': 'Connected to SmartBets real-time odds',
+            'message': 'Connected to PrizmBets real-time odds',
             'timestamp': datetime.utcnow().isoformat(),
             'server_time': int(time.time())
         }
@@ -331,8 +331,8 @@ class RealTimeOddsServer:
 def get_websocket_client_code() -> str:
     """Generate JavaScript code for frontend WebSocket integration"""
     return """
-// SmartBets WebSocket Client
-class SmartBetsWebSocket {
+// PrizmBets WebSocket Client
+class PrizmBetsWebSocket {
     constructor(url = 'ws://localhost:8765') {
         this.url = url;
         this.socket = null;
@@ -352,7 +352,7 @@ class SmartBetsWebSocket {
             this.socket = new WebSocket(this.url);
             
             this.socket.onopen = () => {
-                console.log('Connected to SmartBets WebSocket');
+                console.log('Connected to PrizmBets WebSocket');
                 this.reconnectAttempts = 0;
                 this.notifyHandlers('connection_status', { connected: true });
                 
@@ -450,7 +450,7 @@ class SmartBetsWebSocket {
 }
 
 // Usage example:
-// const wsClient = new SmartBetsWebSocket();
+// const wsClient = new PrizmBetsWebSocket();
 // wsClient.on('odds_update', (data) => {
 //     console.log('Odds updated:', data);
 // });
@@ -469,7 +469,7 @@ if __name__ == '__main__':
     server = RealTimeOddsServer(port=8765)
     
     print("=" * 60)
-    print("SMARTBETS 2.0 REAL-TIME ODDS WEBSOCKET SERVER")
+    print("PRIZMBETS REAL-TIME ODDS WEBSOCKET SERVER")
     print("=" * 60)
     print("WebSocket URL: ws://localhost:8765")
     print("Features: Real-time odds updates, sport subscriptions")

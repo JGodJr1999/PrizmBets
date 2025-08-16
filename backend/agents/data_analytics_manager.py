@@ -1,5 +1,5 @@
 """
-Data & Analytics Manager Agent for SmartBets 2.0
+Data & Analytics Manager Agent for PrizmBets
 Comprehensive data analysis, insights generation, and business intelligence
 """
 
@@ -581,7 +581,7 @@ class DataAnalyticsManagerAgent(BaseAgent):
         """Configure connections to various data sources"""
         self.data_sources = {
             'user_analytics': 'Google Analytics + Custom Events',
-            'betting_data': 'Internal SmartBets Database',
+            'betting_data': 'Internal PrizmBets Database',
             'odds_data': 'The Odds API + Multiple Sportsbooks',
             'financial_data': 'Stripe + Internal Revenue Tracking',
             'market_data': 'Sports Data APIs + News Feeds'

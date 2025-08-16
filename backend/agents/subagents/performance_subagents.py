@@ -1,5 +1,5 @@
 """
-Performance Manager Subagents for SmartBets 2.0
+Performance Manager Subagents for PrizmBets
 Specialized performance agents for frontend, database, and infrastructure optimization
 """
 

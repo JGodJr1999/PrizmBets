@@ -1,5 +1,5 @@
 """
-Update Management API Routes for SmartBets 2.0
+Update Management API Routes for PrizmBets
 Endpoints for checking and applying software updates
 """
 

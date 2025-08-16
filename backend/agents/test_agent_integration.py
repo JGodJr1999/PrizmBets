@@ -1,5 +1,5 @@
 """
-Comprehensive Integration Test for SmartBets 2.0 AI Agent System
+Comprehensive Integration Test for PrizmBets AI Agent System
 Tests all 21 AI agents (10 main agents + 11 specialized subagents) and their interactions
 """
 
@@ -46,7 +46,7 @@ class AgentSystemIntegrationTest:
         
     async def initialize_all_agents(self) -> Dict[str, Any]:
         """Initialize all 21 AI agents and verify their readiness"""
-        print("🚀 Initializing SmartBets 2.0 AI Agent System...")
+        print("🚀 Initializing PrizmBets AI Agent System...")
         print("📊 Total Agents: 21 (10 Main Agents + 11 Specialized Subagents)")
         
         initialization_results = {
@@ -474,7 +474,7 @@ class AgentSystemIntegrationTest:
         final_report = {
             'test_report_id': f"final_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             'report_timestamp': datetime.now().isoformat(),
-            'smartbets_version': '2.0',
+            'prizmbets_version': '1.0',
             'test_scope': 'comprehensive_ai_agent_system',
             'system_overview': {
                 'total_agents': 21,
@@ -552,7 +552,7 @@ class AgentSystemIntegrationTest:
             'deployment_recommendation': 'APPROVED_FOR_PRODUCTION'
         }
         
-        print("\n🎉 SMARTBETS 2.0 AI AGENT SYSTEM TEST COMPLETE!")
+        print("\n🎉 PRIZMBETS AI AGENT SYSTEM TEST COMPLETE!")
         print("=" * 60)
         print(f"🤖 Total Agents Tested: {final_report['system_overview']['total_agents']}")
         print(f"✅ Initialization Success: {final_report['test_results_summary']['initialization_test']['success_rate']:.1f}%")

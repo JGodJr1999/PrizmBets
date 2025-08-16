@@ -20,7 +20,7 @@ const SubscriptionPage = () => {
     
     // Redirect to dashboard or success page
     navigate('/dashboard', { 
-      state: { message: `Welcome to SmartBets ${newTier} plan!` }
+      state: { message: `Welcome to PrizmBets ${newTier} plan!` }
     });
   };
 

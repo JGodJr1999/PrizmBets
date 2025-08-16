@@ -1,5 +1,5 @@
 """
-Models package initialization for SmartBets 2.0
+Models package initialization for PrizmBets
 Exports all database models for easy importing
 """
 

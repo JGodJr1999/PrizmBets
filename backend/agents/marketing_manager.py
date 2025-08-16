@@ -1,5 +1,5 @@
 """
-Marketing Manager Agent for SmartBets 2.0
+Marketing Manager Agent for PrizmBets
 Handles user engagement, promotions, and marketing strategies
 """
 
@@ -30,7 +30,7 @@ class MarketingManagerAgent(BaseAgent):
             # Load default content templates
             self.content_templates = {
                 'welcome_email': """
-                Welcome to SmartBets 2.0! 🎯
+                Welcome to PrizmBets! 🎯
                 
                 Get ready to revolutionize your sports betting with AI-powered insights:
                 • Live odds comparison across 15+ sportsbooks
@@ -38,7 +38,7 @@ class MarketingManagerAgent(BaseAgent):
                 • Real-time alerts for value opportunities
                 • Professional analytics dashboard
                 
-                Start your FREE trial today and see why pros choose SmartBets!
+                Start your FREE trial today and see why pros choose PrizmBets!
                 """,
                 
                 'value_bet_alert': """
@@ -52,7 +52,7 @@ class MarketingManagerAgent(BaseAgent):
                 """,
                 
                 'weekly_performance': """
-                📊 Your Weekly SmartBets Report
+                📊 Your Weekly PrizmBets Report
                 
                 This week you:
                 • Identified {value_bets} value opportunities
@@ -65,7 +65,7 @@ class MarketingManagerAgent(BaseAgent):
                 'retention_offer': """
                 We miss you! 💔
                 
-                Come back to SmartBets and get:
+                Come back to PrizmBets and get:
                 • 30% off Premium subscription
                 • Exclusive VIP betting tips
                 • Priority customer support
@@ -282,17 +282,17 @@ class MarketingManagerAgent(BaseAgent):
         # Content generation based on type and topic
         generated_content = {
             'email': {
-                'subject': f"🎯 SmartBets Alert: {topic.title()}",
-                'body': f"Discover new opportunities with SmartBets 2.0's {topic} features.",
+                'subject': f"🎯 PrizmBets Alert: {topic.title()}",
+                'body': f"Discover new opportunities with PrizmBets' {topic} features.",
                 'cta': "Explore Now"
             },
             'social_media': {
                 'platform': 'twitter',
-                'text': f"🚀 Level up your betting game with SmartBets 2.0! {topic.title()} made simple. #SmartBetting #AI",
-                'hashtags': ['#SmartBets', '#SportsBetting', '#AI', f'#{topic.title()}']
+                'text': f"🚀 Level up your betting game with PrizmBets! {topic.title()} made simple. #SmartBetting #AI",
+                'hashtags': ['#PrizmBets', '#SportsBetting', '#AI', f'#{topic.title()}']
             },
             'push_notification': {
-                'title': "SmartBets Alert",
+                'title': "PrizmBets Alert",
                 'message': f"New {topic} opportunities available!",
                 'action': "View Details"
             }

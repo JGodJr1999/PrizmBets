@@ -43,11 +43,23 @@ class Config:
     # Session security
     SESSION_CLEANUP_INTERVAL = 3600  # 1 hour
     MAX_SESSIONS_PER_USER = 5
+    
+    # Email configuration
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+    MAIL_MAX_EMAILS = int(os.environ.get('MAIL_MAX_EMAILS', 50))  # Rate limiting
+    MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() == 'true'
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///dev_smartbets.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///dev_prizmbets.db'
     SESSION_COOKIE_SECURE = False  # Allow HTTP in development
+    MAIL_SUPPRESS_SEND = True  # Don't send real emails in development
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -56,6 +68,68 @@ class ProductionConfig(Config):
     # Enhanced security for production
     PREFERRED_URL_SCHEME = 'https'
     SESSION_COOKIE_SECURE = True
+    
+    # Production database optimizations
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.environ.get('DB_POOL_SIZE', 10)),
+        'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', 20)),
+        'pool_timeout': int(os.environ.get('DB_POOL_TIMEOUT', 30)),
+        'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', 3600)),
+        'pool_pre_ping': True
+    }
+    
+    # Performance optimizations
+    WEB_CONCURRENCY = int(os.environ.get('WEB_CONCURRENCY', 4))
+    
+    # SSL/HTTPS enforcement
+    SSL_REDIRECT = os.environ.get('SSL_REDIRECT', 'true').lower() == 'true'
+    FORCE_HTTPS = os.environ.get('FORCE_HTTPS', 'true').lower() == 'true'
+    
+    # Enhanced rate limiting for production
+    API_RATE_LIMIT = int(os.environ.get('API_RATE_LIMIT', 1000))
+    
+    # Logging configuration
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_FORMAT = os.environ.get('LOG_FORMAT', 'json')
+    
+    # CDN and static files
+    CDN_URL = os.environ.get('CDN_URL')
+    STATIC_URL = os.environ.get('STATIC_URL')
+    
+    # Feature flags
+    ENABLE_REAL_PAYMENTS = os.environ.get('ENABLE_REAL_PAYMENTS', 'true').lower() == 'true'
+    ENABLE_EMAIL_CAMPAIGNS = os.environ.get('ENABLE_EMAIL_CAMPAIGNS', 'true').lower() == 'true'
+    ENABLE_ADMIN_DASHBOARD = os.environ.get('ENABLE_ADMIN_DASHBOARD', 'true').lower() == 'true'
+    ENABLE_WEBSOCKETS = os.environ.get('ENABLE_WEBSOCKETS', 'true').lower() == 'true'
+    
+    # Security headers
+    HSTS_MAX_AGE = int(os.environ.get('HSTS_MAX_AGE', 31536000))  # 1 year
+    CONTENT_SECURITY_POLICY = os.environ.get(
+        'CONTENT_SECURITY_POLICY',
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
+        "connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com"
+    )
+    
+    # Enhanced password security
+    BCRYPT_LOG_ROUNDS = 14  # Increased for production
+    
+    # Session security
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=2)  # Shorter sessions in production
+    
+    # Rate limiting - more restrictive in production
+    API_RATE_LIMIT = int(os.environ.get('API_RATE_LIMIT', 500))
+    LOGIN_RATE_LIMIT = int(os.environ.get('LOGIN_RATE_LIMIT', 10))
+    
+    # File upload security
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    
+    # Logging
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_TO_FILE = os.environ.get('LOG_TO_FILE', 'true').lower() == 'true'
+    LOG_FILE_PATH = os.environ.get('LOG_FILE_PATH', '/var/log/prizmbets/app.log')
 
 class TestingConfig(Config):
     TESTING = True

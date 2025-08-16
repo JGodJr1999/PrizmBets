@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for SmartBets 2.0 authentication system
+Test script for PrizmBets authentication system
 Tests registration, login, token refresh, and other auth endpoints
 """
 
@@ -11,7 +11,7 @@ import time
 
 # Configuration
 BASE_URL = 'http://localhost:5000'
-TEST_EMAIL = 'testuser@smartbets.com'
+TEST_EMAIL = 'testuser@prizmbets.com'
 TEST_PASSWORD = 'TestPassword123!'
 TEST_NAME = 'Test User'
 
@@ -314,7 +314,7 @@ class AuthTester:
     
     def run_all_tests(self):
         """Run all authentication tests"""
-        print("SmartBets 2.0 Authentication System Test")
+        print("PrizmBets Authentication System Test")
         print("=" * 50)
         
         tests = [

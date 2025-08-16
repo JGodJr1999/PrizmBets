@@ -2,9 +2,11 @@ from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from datetime import datetime, timedelta
 from app.utils.validation import validate_parlay_input, validate_odds_request
+from app.utils.auth_decorators import auth_required
 from app.services.ai_evaluator import AIEvaluator
 from app.services.odds_service import OddsService
 from app.services.comprehensive_sports_service import ComprehensiveSportsService
+from app.services.tier_service import TierService
 import logging
 import random
 
@@ -24,11 +26,12 @@ def health_check():
     """Health check endpoint for monitoring"""
     return jsonify({
         'status': 'healthy',
-        'service': 'SmartBets AI',
+        'service': 'PrizmBets AI',
         'version': '1.0.0'
     })
 
 @api_bp.route('/evaluate', methods=['POST'])
+@auth_required(optional=True)
 def evaluate_parlay():
     """
     Evaluate parlay intelligence using AI analysis
@@ -59,14 +62,40 @@ def evaluate_parlay():
                 'details': str(e)
             }), 400
         
+        # Check tier limits for authenticated users
+        current_user = getattr(request, 'current_user', None)
+        usage_info = {}
+        
+        if current_user and current_user.is_active:
+            # Validate user ID is a positive integer
+            if not isinstance(current_user.id, int) or current_user.id <= 0:
+                logger.warning(f"Invalid user ID: {current_user.id}")
+                return jsonify({'error': 'Invalid user session'}), 401
+            
+            # Check if user can access parlay evaluation feature
+            can_access, tier_info = TierService.check_feature_access(current_user.id, 'parlay_evaluations')
+            
+            if not can_access:
+                return jsonify({
+                    'success': False,
+                    'error': 'Usage limit reached',
+                    'message': tier_info.get('upgrade_message', 'Please upgrade to continue using this feature'),
+                    'usage_info': tier_info,
+                    'upgrade_required': tier_info.get('upgrade_required', False)
+                }), 403
+            
+            # Track usage
+            usage_tracking = TierService.track_feature_usage(current_user.id, 'parlay_evaluations')
+            usage_info = usage_tracking
+        
         # Log the evaluation request (without sensitive data)
         logger.info(f"Evaluating parlay with {len(validated_data['bets'])} bets")
         
         # Perform AI evaluation
         evaluation_result = ai_evaluator.evaluate_parlay(validated_data)
         
-        # Return evaluation results
-        return jsonify({
+        # Return evaluation results with usage info
+        response_data = {
             'success': True,
             'evaluation': evaluation_result,
             'input_summary': {
@@ -74,7 +103,27 @@ def evaluate_parlay():
                 'total_amount': validated_data['total_amount'],
                 'bet_types': [bet['bet_type'] for bet in validated_data['bets']]
             }
-        })
+        }
+        
+        # Add usage info for authenticated users
+        if current_user and usage_info:
+            response_data['usage_info'] = usage_info
+            
+            # Add upgrade prompt if close to limit
+            if usage_info.get('remaining', -1) == 1:  # 1 evaluation left
+                response_data['upgrade_prompt'] = {
+                    'message': 'You have 1 parlay evaluation remaining today. Upgrade to Pro for unlimited access!',
+                    'tier': 'pro',
+                    'price': '$9.99/month'
+                }
+            elif usage_info.get('remaining', -1) == 0:  # Last evaluation
+                response_data['upgrade_prompt'] = {
+                    'message': 'This was your last free parlay evaluation today. Upgrade to Pro for unlimited access!',
+                    'tier': 'pro', 
+                    'price': '$9.99/month'
+                }
+        
+        return jsonify(response_data)
         
     except Exception as e:
         # Log error without exposing internal details
@@ -88,6 +137,111 @@ def evaluate_parlay():
 def evaluate_parlay_options():
     """Handle preflight requests for CORS"""
     return '', 200
+
+# Tier Management Endpoints
+
+@api_bp.route('/usage', methods=['GET'])
+@auth_required()
+def get_usage_status():
+    """Get current usage status for the authenticated user"""
+    try:
+        current_user = getattr(request, 'current_user', None)
+        if not current_user:
+            return jsonify({'error': 'User not authenticated'}), 401
+        
+        usage_status = TierService.get_usage_status(current_user.id)
+        return jsonify(usage_status)
+        
+    except Exception as e:
+        logger.error(f"Error getting usage status: {str(e)}")
+        return jsonify({'error': 'Unable to retrieve usage status'}), 500
+
+@api_bp.route('/tiers', methods=['GET'])
+def get_tier_info():
+    """Get information about all subscription tiers"""
+    try:
+        tiers = TierService.get_all_tiers()
+        return jsonify(tiers)
+        
+    except Exception as e:
+        logger.error(f"Error getting tier info: {str(e)}")
+        return jsonify({'error': 'Unable to retrieve tier information'}), 500
+
+@api_bp.route('/recommendations', methods=['GET'])
+@auth_required()
+def get_upgrade_recommendations():
+    """Get personalized upgrade recommendations for the user"""
+    try:
+        current_user = getattr(request, 'current_user', None)
+        if not current_user:
+            return jsonify({'error': 'User not authenticated'}), 401
+        
+        recommendations = TierService.get_upgrade_recommendations(current_user.id)
+        return jsonify(recommendations)
+        
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {str(e)}")
+        return jsonify({'error': 'Unable to generate recommendations'}), 500
+
+@api_bp.route('/demo', methods=['POST'])
+def demo_evaluate():
+    """Demo parlay evaluation for unauthenticated users (limited features)"""
+    try:
+        # Basic rate limiting for demo endpoint (prevent abuse)
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        
+        # Log demo usage for monitoring
+        logger.info(f"Demo evaluation request from IP: {client_ip}")
+        # Validate request content type
+        if not request.is_json:
+            return jsonify({
+                'error': 'Content-Type must be application/json'
+            }), 400
+        
+        # Get and validate input data
+        raw_data = request.get_json()
+        
+        if not raw_data:
+            return jsonify({
+                'error': 'Request body cannot be empty'
+            }), 400
+        
+        # Sanitize and validate input
+        try:
+            validated_data = validate_parlay_input(raw_data)
+        except ValidationError as e:
+            return jsonify({
+                'error': 'Invalid input data',
+                'details': str(e)
+            }), 400
+        
+        # Perform limited AI evaluation (basic version for demo)
+        evaluation_result = ai_evaluator.evaluate_parlay(validated_data)
+        
+        # Add demo limitations
+        evaluation_result['demo_mode'] = True
+        evaluation_result['message'] = 'This is a demo evaluation with limited features. Sign up for full access!'
+        
+        # Remove some advanced features for demo
+        if 'advanced_insights' in evaluation_result:
+            evaluation_result['advanced_insights'] = 'Premium feature - Sign up to unlock'
+        
+        return jsonify({
+            'success': True,
+            'evaluation': evaluation_result,
+            'demo_mode': True,
+            'signup_prompt': {
+                'message': 'Sign up for free to get 3 full evaluations per day!',
+                'features': ['Full AI analysis', 'Usage tracking', 'Personalized recommendations']
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Demo evaluation error: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error occurred',
+            'message': 'Please try again later'
+        }), 500
 
 @api_bp.errorhandler(413)
 def request_entity_too_large(error):

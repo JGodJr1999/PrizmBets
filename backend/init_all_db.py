@@ -12,7 +12,7 @@ except ImportError:
     import datetime as dt
     UTC = dt.timezone.utc
 from app import create_app
-from app.models.user import db, User, UserProfile
+from app.models.user import db, User, UserProfile, UserUsage
 from app.models.parlay import Parlay
 from app.models.pickem_pools import PickEmPool, PoolMembership, NFLGame, NFLWeek, PoolPick
 import logging
@@ -39,19 +39,19 @@ def init_database():
             logger.info("Creating test users...")
             test_users = [
                 {
-                    'email': 'admin@smartbets.com',
+                    'email': 'admin@prizmbets.com',
                     'password': 'admin123',
                     'name': 'Admin User',
                     'subscription_tier': 'premium'
                 },
                 {
-                    'email': 'test@smartbets.com',
+                    'email': 'test@prizmbets.com',
                     'password': 'test123',
                     'name': 'Test User',
                     'subscription_tier': 'pro'
                 },
                 {
-                    'email': 'free@smartbets.com',
+                    'email': 'free@prizmbets.com',
                     'password': 'free123',
                     'name': 'Free User',
                     'subscription_tier': 'free'
@@ -221,9 +221,9 @@ def init_database():
             logger.info("Database initialization complete!")
             logger.info("=" * 50)
             logger.info("Test users created:")
-            logger.info("  - admin@smartbets.com / admin123 (Premium)")
-            logger.info("  - test@smartbets.com / test123 (Pro)")
-            logger.info("  - free@smartbets.com / free123 (Free)")
+            logger.info("  - admin@prizmbets.com / admin123 (Premium)")
+            logger.info("  - test@prizmbets.com / test123 (Pro)")
+            logger.info("  - free@prizmbets.com / free123 (Free)")
             logger.info("=" * 50)
             
             return True

@@ -1,5 +1,5 @@
 """
-Authentication routes for SmartBets 2.0
+Authentication routes for PrizmBets
 Handles user registration, login, logout, token refresh, and profile management
 """
 
@@ -14,6 +14,7 @@ from app.utils.auth_validation import (
 )
 from app.utils.jwt_utils import TokenManager, SecurityUtils
 from app.utils.auth_decorators import auth_required, verified_user_required, get_current_user
+from app.services.email_service import EmailService
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import logging
 import uuid
@@ -83,6 +84,16 @@ def register():
             db.session.commit()
             
             logger.info(f"New user registered: {new_user.email} (ID: {new_user.id})")
+            
+            # Send welcome email (non-blocking)
+            try:
+                from app import mail
+                email_service = EmailService(mail)
+                email_service.send_welcome_email(new_user)
+                logger.info(f"Welcome email queued for {new_user.email}")
+            except Exception as email_error:
+                logger.warning(f"Failed to send welcome email to {new_user.email}: {str(email_error)}")
+                # Don't fail registration if email fails
             
             # Return success response (don't auto-login for security)
             return jsonify({

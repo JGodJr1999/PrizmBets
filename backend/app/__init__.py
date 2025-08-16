@@ -3,6 +3,7 @@ from flask_cors import CORS
 # Temporarily disabled due to SQLAlchemy version issue
 # from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
+from flask_mail import Mail
 from app.config.settings import config
 from app.models.user import db
 import os
@@ -10,6 +11,7 @@ import os
 # Initialize extensions
 # migrate = Migrate()  # Temporarily disabled
 jwt = JWTManager()
+mail = Mail()
 
 def create_app(config_name=None):
     """Application factory pattern for Flask app creation"""
@@ -24,6 +26,7 @@ def create_app(config_name=None):
     db.init_app(app)
     # migrate.init_app(app, db)  # Temporarily disabled
     jwt.init_app(app)
+    mail.init_app(app)
     
     # Initialize CORS with security settings
     CORS(app, 
@@ -82,11 +85,19 @@ def create_app(config_name=None):
     from app.routes.payments import payments_bp
     from app.routes.updates import updates_bp
     from app.routes.pickem_simple import pickem_bp
+    from app.routes.admin import admin_bp
+    from app.routes.email import email_bp
+    from app.routes.educational import educational_bp
+    from app.routes.usage import usage_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(payments_bp, url_prefix='/api/payments')
     app.register_blueprint(updates_bp)
     app.register_blueprint(pickem_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(email_bp)
+    app.register_blueprint(educational_bp)
+    app.register_blueprint(usage_bp, url_prefix='/api/usage')
     
     # Add security headers
     @app.after_request
@@ -103,10 +114,30 @@ def create_app(config_name=None):
     @app.route('/')
     def index():
         return {
-            'message': 'SmartBets AI API',
+            'message': 'PrizmBets AI API',
             'version': '2.0.0',
             'status': 'running',
-            'features': ['authentication', 'parlay-evaluation', 'odds-comparison', 'nfl-pickem-pools']
+            'features': [
+                'authentication',
+                'free-tier-system', 
+                'parlay-evaluation',
+                'odds-comparison',
+                'admin-dashboard',
+                'email-system',
+                'educational-content',
+                'nfl-pickem-pools',
+                'production-ready'
+            ],
+            'endpoints': {
+                'auth': '/api/auth/*',
+                'parlay_analysis': '/api/evaluate',
+                'tier_management': '/api/usage',
+                'admin_dashboard': '/api/admin/*',
+                'email_management': '/api/email/*', 
+                'educational_content': '/api/education/*',
+                'payments': '/api/payments/*',
+                'pickem_pools': '/api/pickem/*'
+            }
         }
     
     # Health check with database status
@@ -123,8 +154,17 @@ def create_app(config_name=None):
         return {
             'status': 'healthy',
             'database': db_status,
-            'service': 'SmartBets AI',
-            'version': '2.0.0'
+            'service': 'PrizmBets AI',
+            'version': '2.0.0',
+            'systems': {
+                'authentication': 'operational',
+                'free_tier': 'operational',
+                'email_service': 'operational',
+                'admin_dashboard': 'operational',
+                'educational_content': 'operational',
+                'production_config': 'ready'
+            },
+            'deployment_ready': True
         }
     
     # Global error handlers

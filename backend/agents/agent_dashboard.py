@@ -1,5 +1,5 @@
 """
-Agent Dashboard for SmartBets 2.0
+Agent Dashboard for PrizmBets
 Comprehensive monitoring, management, and coordination of all AI agents
 """
 

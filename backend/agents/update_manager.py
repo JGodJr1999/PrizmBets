@@ -1,5 +1,5 @@
 """
-Update Manager Agent for SmartBets 2.0
+Update Manager Agent for PrizmBets
 Automatically checks for and manages software updates for all dependencies
 """
 

@@ -1,5 +1,5 @@
 """
-Testing & Quality Manager Subagents for SmartBets 2.0
+Testing & Quality Manager Subagents for PrizmBets
 Specialized testing agents for unit tests, integration tests, and code quality analysis
 """
 

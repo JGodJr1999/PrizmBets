@@ -30,9 +30,9 @@ api.interceptors.request.use(
 
 // Helper function to get stored tokens
 const getStoredAuthTokens = () => {
-  let tokens = localStorage.getItem('smartbets_auth_tokens');
+  let tokens = localStorage.getItem('prizmbets_auth_tokens');
   if (!tokens) {
-    tokens = sessionStorage.getItem('smartbets_auth_tokens');
+    tokens = sessionStorage.getItem('prizmbets_auth_tokens');
   }
   
   if (tokens) {
@@ -77,8 +77,8 @@ api.interceptors.response.use(
           };
           
           // Update stored tokens
-          const storage = localStorage.getItem('smartbets_auth_tokens') ? localStorage : sessionStorage;
-          storage.setItem('smartbets_auth_tokens', JSON.stringify(newTokens));
+          const storage = localStorage.getItem('prizmbets_auth_tokens') ? localStorage : sessionStorage;
+          storage.setItem('prizmbets_auth_tokens', JSON.stringify(newTokens));
           
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
@@ -87,10 +87,10 @@ api.interceptors.response.use(
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
           // Clear tokens and redirect to login
-          localStorage.removeItem('smartbets_auth_tokens');
-          sessionStorage.removeItem('smartbets_auth_tokens');
-          localStorage.removeItem('smartbets_user');
-          sessionStorage.removeItem('smartbets_user');
+          localStorage.removeItem('prizmbets_auth_tokens');
+          sessionStorage.removeItem('prizmbets_auth_tokens');
+          localStorage.removeItem('prizmbets_user');
+          sessionStorage.removeItem('prizmbets_user');
           
           // Notify the app about the auth failure
           window.dispatchEvent(new CustomEvent('authTokenExpired'));
@@ -473,6 +473,116 @@ export const apiService = {
         throw new Error(error.response.data.error);
       }
       throw new Error('Failed to get personal consultation');
+    }
+  },
+
+  // === USAGE TRACKING ENDPOINTS ===
+
+  // Get current user usage stats
+  async getUserUsage() {
+    try {
+      const response = await api.get('/api/usage/current');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get usage data');
+    }
+  },
+
+  // Get usage history
+  async getUserUsageHistory(days = 30) {
+    try {
+      const response = await api.get(`/api/usage/history?days=${days}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get usage history');
+    }
+  },
+
+  // === EDUCATIONAL CONTENT ENDPOINTS ===
+
+  // Get demo parlays
+  async getDemoParlays() {
+    try {
+      const response = await api.get('/api/education/demo-parlays');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get demo parlays');
+    }
+  },
+
+  // Get tutorials
+  async getTutorials() {
+    try {
+      const response = await api.get('/api/education/tutorials');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get tutorials');
+    }
+  },
+
+  // Get specific tutorial
+  async getTutorial(id) {
+    try {
+      const response = await api.get(`/api/education/tutorials/${id}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get tutorial');
+    }
+  },
+
+  // === ADMIN ENDPOINTS ===
+
+  // Get admin dashboard data
+  async getAdminDashboard() {
+    try {
+      const response = await api.get('/api/admin/dashboard');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get admin dashboard');
+    }
+  },
+
+  // Get user analytics
+  async getUserAnalytics() {
+    try {
+      const response = await api.get('/api/admin/users/analytics');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get user analytics');
+    }
+  },
+
+  // Get system health
+  async getSystemHealth() {
+    try {
+      const response = await api.get('/api/admin/system/health');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get system health');
     }
   }
 };

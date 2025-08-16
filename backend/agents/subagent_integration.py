@@ -1,5 +1,5 @@
 """
-Subagent Integration System for SmartBets 2.0
+Subagent Integration System for PrizmBets
 Manages coordination between main agents and their specialized subagents
 """
 

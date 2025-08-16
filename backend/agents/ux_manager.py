@@ -1,5 +1,5 @@
 """
-User Experience Manager Agent for SmartBets 2.0
+User Experience Manager Agent for PrizmBets
 Advanced UX optimization, behavior analysis, and user journey improvement
 """
 

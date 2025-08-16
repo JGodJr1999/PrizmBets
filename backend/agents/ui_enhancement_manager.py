@@ -1,5 +1,5 @@
 """
-UI Enhancement Manager Agent for SmartBets 2.0
+UI Enhancement Manager Agent for PrizmBets
 Continuously improves user interface and experience through automated analysis
 """
 

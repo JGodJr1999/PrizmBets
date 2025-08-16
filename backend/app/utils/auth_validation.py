@@ -1,5 +1,5 @@
 """
-Authentication validation schemas and utilities for SmartBets 2.0
+Authentication validation schemas and utilities for PrizmBets
 Handles validation for registration, login, and profile updates
 """
 

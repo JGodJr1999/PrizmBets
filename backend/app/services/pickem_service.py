@@ -1,5 +1,5 @@
 """
-NFL Pick'em Pools Service for SmartBets 2.0
+NFL Pick'em Pools Service for PrizmBets
 Business logic for pool management, picks, standings, and NFL data integration
 """
 

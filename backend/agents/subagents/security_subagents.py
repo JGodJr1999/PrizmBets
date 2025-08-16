@@ -1,5 +1,5 @@
 """
-Security Manager Subagents for SmartBets 2.0
+Security Manager Subagents for PrizmBets
 Specialized security agents for vulnerability scanning, compliance monitoring, and threat detection
 """
 

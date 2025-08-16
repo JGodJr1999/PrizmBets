@@ -1,5 +1,5 @@
 """
-UX Manager Subagents for SmartBets 2.0
+UX Manager Subagents for PrizmBets
 Specialized UX agents for A/B testing, conversion optimization, and usability testing
 """
 

@@ -1,5 +1,5 @@
 """
-Authentication decorators and middleware for SmartBets 2.0
+Authentication decorators and middleware for PrizmBets
 Provides role-based access control and authentication requirements
 """
 

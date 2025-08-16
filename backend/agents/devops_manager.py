@@ -1,5 +1,5 @@
 """
-DevOps Manager Agent for SmartBets 2.0
+DevOps Manager Agent for PrizmBets
 Comprehensive deployment, infrastructure management, and operational automation
 """
 
@@ -30,21 +30,21 @@ class DevOpsManager(BaseAgent):
             self.deployment_environments = {
                 'development': {
                     'status': 'active',
-                    'url': 'https://dev.smartbets.com',
+                    'url': 'https://dev.prizmbets.com',
                     'resources': {'cpu': '2 cores', 'memory': '4GB', 'storage': '50GB'},
                     'auto_deploy': True,
                     'branch': 'develop'
                 },
                 'staging': {
                     'status': 'active',
-                    'url': 'https://staging.smartbets.com',
+                    'url': 'https://staging.prizmbets.com',
                     'resources': {'cpu': '4 cores', 'memory': '8GB', 'storage': '100GB'},
                     'auto_deploy': False,
                     'branch': 'main'
                 },
                 'production': {
                     'status': 'ready',
-                    'url': 'https://smartbets.com',
+                    'url': 'https://prizmbets.com',
                     'resources': {'cpu': '8 cores', 'memory': '16GB', 'storage': '500GB'},
                     'auto_deploy': False,
                     'branch': 'production',
@@ -273,7 +273,7 @@ class DevOpsManager(BaseAgent):
                     'component': 'CloudFront CDN',
                     'status': 'provisioned',
                     'configuration': {
-                        'origin_domain': 'smartbets-alb.us-east-1.elb.amazonaws.com',
+                        'origin_domain': 'prizmbets-alb.us-east-1.elb.amazonaws.com',
                         'cache_behaviors': 'optimized_for_spa',
                         'ssl_certificate': 'acm_managed',
                         'price_class': 'PriceClass_100'

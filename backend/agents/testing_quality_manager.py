@@ -1,5 +1,5 @@
 """
-Testing & Quality Manager Agent for SmartBets 2.0
+Testing & Quality Manager Agent for PrizmBets
 Automated testing, code quality assurance, and continuous integration management
 """
 

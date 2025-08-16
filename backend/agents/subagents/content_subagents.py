@@ -1,5 +1,5 @@
 """
-Content Manager Subagents for SmartBets 2.0
+Content Manager Subagents for PrizmBets
 Specialized content agents for sports data curation, odds validation, and quality control
 """
 

@@ -1,5 +1,5 @@
 """
-Performance Manager Agent for SmartBets 2.0
+Performance Manager Agent for PrizmBets
 System performance monitoring, optimization, and resource management
 """
 

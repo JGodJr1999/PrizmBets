@@ -235,7 +235,7 @@ class TheOddsAPIService:
         base_url = base_urls.get(sportsbook, 'https://example.com')
         
         # Add affiliate tracking parameters
-        affiliate_params = f"?ref=smartbets&utm_source=smartbets&team={team}&sport={sport}"
+        affiliate_params = f"?ref=prizmbets&utm_source=prizmbets&team={team}&sport={sport}"
         
         return f"{base_url}{affiliate_params}"
 

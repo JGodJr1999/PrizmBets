@@ -1,5 +1,5 @@
 """
-Update SubAgents for SmartBets 2.0
+Update SubAgents for PrizmBets
 Specialized agents for different aspects of update management
 """
 

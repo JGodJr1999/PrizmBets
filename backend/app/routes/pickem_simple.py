@@ -1,5 +1,5 @@
 """
-Simplified NFL Pick'em Pools API Routes for SmartBets 2.0
+Simplified NFL Pick'em Pools API Routes for PrizmBets
 Temporary replacement without decorator conflicts
 """
 

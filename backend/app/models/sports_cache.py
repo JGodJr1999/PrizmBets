@@ -1,5 +1,5 @@
 """
-Sports data caching models for SmartBets 2.0
+Sports data caching models for PrizmBets
 Provides persistent storage for sports data to reduce API calls and improve performance
 """
 

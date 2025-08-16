@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import toast from 'react-hot-toast';
 import { Brain, BarChart3, DollarSign, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import ParlayBuilder from '../components/Parlay/ParlayBuilder';
 import EvaluationResults from '../components/Results/EvaluationResults';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
+import UsageTracker from '../components/Usage/UsageTracker';
+import UsageDemo from '../components/Usage/UsageDemo';
 import { apiService } from '../services/api';
 
 const PageContainer = styled.div`
@@ -108,6 +112,8 @@ const ErrorMessage = styled.div`
 `;
 
 const ParlayPage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [evaluation, setEvaluation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -129,6 +135,14 @@ const ParlayPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleUpgradeClick = () => {
+    navigate('/subscription');
+  };
+
+  const handleSignUpClick = () => {
+    navigate('/register');
   };
 
   return (
@@ -182,6 +196,12 @@ const ParlayPage = () => {
             </FeatureDescription>
           </FeatureCard>
         </FeatureGrid>
+
+        {isAuthenticated ? (
+          <UsageTracker onUpgradeClick={handleUpgradeClick} />
+        ) : (
+          <UsageDemo onSignUpClick={handleSignUpClick} />
+        )}
 
         <ParlayBuilder 
           onEvaluate={handleEvaluateParlay}

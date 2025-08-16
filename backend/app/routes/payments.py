@@ -1,5 +1,5 @@
 """
-SmartBets 2.0 - Payment Routes
+PrizmBets - Payment Routes
 Handles subscription management, billing, and Stripe webhook endpoints
 """
 

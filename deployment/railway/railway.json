@@ -1,0 +1,58 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "backend/Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 2,
+    "sleepApplication": false,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "FLASK_ENV": "production",
+        "PORT": "5001",
+        "PYTHONPATH": "/app"
+      }
+    },
+    "staging": {
+      "variables": {
+        "FLASK_ENV": "staging",
+        "PORT": "5001",
+        "PYTHONPATH": "/app"
+      }
+    }
+  },
+  "services": [
+    {
+      "name": "prizmbets-backend",
+      "source": {
+        "type": "image",
+        "image": "prizmbets-backend:latest"
+      },
+      "variables": {
+        "FLASK_ENV": "$RAILWAY_ENVIRONMENT",
+        "DATABASE_URL": "$DATABASE_URL",
+        "REDIS_URL": "$REDIS_URL",
+        "SECRET_KEY": "$SECRET_KEY",
+        "JWT_SECRET_KEY": "$JWT_SECRET_KEY"
+      }
+    },
+    {
+      "name": "redis",
+      "source": {
+        "type": "template",
+        "template": "redis"
+      }
+    },
+    {
+      "name": "postgresql",
+      "source": {
+        "type": "template",
+        "template": "postgresql"
+      }
+    }
+  ]
+}

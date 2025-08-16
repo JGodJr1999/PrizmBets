@@ -1,5 +1,5 @@
 """
-JWT token management utilities for SmartBets 2.0
+JWT token management utilities for PrizmBets
 Handles token generation, validation, and session management
 """
 

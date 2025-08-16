@@ -130,7 +130,7 @@ const BestOddsDisplay = ({
   // Generate affiliate link (placeholder for now)
   const generateAffiliateLink = (sportsbook, url) => {
     // This will be replaced with actual affiliate tracking when we join programs
-    return `${url}?ref=smartbets&utm_source=smartbets&utm_medium=ai_top5&utm_campaign=${betTitle.replace(/\s+/g, '_').toLowerCase()}`;
+    return `${url}?ref=prizmbets&utm_source=prizmbets&utm_medium=ai_top5&utm_campaign=${betTitle.replace(/\s+/g, '_').toLowerCase()}`;
   };
 
   return (

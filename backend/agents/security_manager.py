@@ -1,5 +1,5 @@
 """
-Security Manager Agent for SmartBets 2.0
+Security Manager Agent for PrizmBets
 Monitors vulnerabilities, implements security best practices, and ensures compliance
 """
 

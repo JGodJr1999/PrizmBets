@@ -1,0 +1,4 @@
+# PrizmBets Heroku Configuration
+web: gunicorn --bind 0.0.0.0:$PORT --workers 4 --worker-class gevent --worker-connections 1000 --max-requests 1000 --max-requests-jitter 100 --timeout 30 --keep-alive 2 --access-logfile - --error-logfile - --log-level info run:app
+worker: celery -A app.celery worker --loglevel=info --concurrency=4
+beat: celery -A app.celery beat --loglevel=info

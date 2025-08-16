@@ -1,5 +1,5 @@
 """
-NFL Schedule Integration Service for SmartBets 2.0
+NFL Schedule Integration Service for PrizmBets
 Integrates with existing comprehensive sports service to populate NFL games and weeks
 """
 

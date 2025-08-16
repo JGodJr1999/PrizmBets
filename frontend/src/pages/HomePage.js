@@ -2,8 +2,11 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import AnimatedHero from '../components/Animations/AnimatedHero';
 import FeatureShowcase from '../components/Animations/FeatureShowcase';
+import UsageTracker from '../components/Usage/UsageTracker';
+import UsageDemo from '../components/Usage/UsageDemo';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -113,6 +116,7 @@ const BackToTopButton = styled(motion.button)`
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
     navigate('/live-sports');
@@ -124,6 +128,14 @@ const HomePage = () => {
     if (featuresSection) {
       featuresSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleUpgradeClick = () => {
+    navigate('/subscription');
+  };
+
+  const handleSignUpClick = () => {
+    navigate('/register');
   };
 
   const scrollToTop = () => {
@@ -214,6 +226,14 @@ const HomePage = () => {
         onGetStarted={handleGetStarted}
         onLearnMore={handleLearnMore}
       />
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+        {isAuthenticated ? (
+          <UsageTracker onUpgradeClick={handleUpgradeClick} />
+        ) : (
+          <UsageDemo onSignUpClick={handleSignUpClick} />
+        )}
+      </div>
 
       <div id="features">
         <FeatureShowcase />

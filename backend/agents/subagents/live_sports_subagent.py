@@ -1,5 +1,5 @@
 """
-Live Sports Data Subagent for SmartBets 2.0
+Live Sports Data Subagent for PrizmBets
 Specialized agent for real-time game data extraction, score parsing, and live status management
 """
 

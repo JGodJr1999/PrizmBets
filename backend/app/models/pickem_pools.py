@@ -1,5 +1,5 @@
 """
-NFL Pick'em Pools Database Models for SmartBets 2.0
+NFL Pick'em Pools Database Models for PrizmBets
 Comprehensive model definitions for pool management, picks, and standings
 """
 

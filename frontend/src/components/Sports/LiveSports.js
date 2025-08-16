@@ -827,7 +827,7 @@ const LiveSports = () => {
 
   const handleBetClick = (sportsbook, team, sport, betAmount, odds) => {
     // Generate affiliate link with bet amount
-    const affiliateUrl = `https://sportsbook.${sportsbook}.com?ref=smartbets&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
+    const affiliateUrl = `https://sportsbook.${sportsbook}.com?ref=prizmbets&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
     
     // Open in new tab
     window.open(affiliateUrl, '_blank');
@@ -894,7 +894,7 @@ const LiveSports = () => {
     const sportsbooks = ['draftkings', 'fanduel', 'betmgm', 'caesars'];
     const randomSportsbook = sportsbooks[Math.floor(Math.random() * sportsbooks.length)];
     
-    const affiliateUrl = `https://sportsbook.${randomSportsbook}.com?ref=smartbets&prop=${encodeURIComponent(betType)}&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
+    const affiliateUrl = `https://sportsbook.${randomSportsbook}.com?ref=prizmbets&prop=${encodeURIComponent(betType)}&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
     
     // Open in new tab
     window.open(affiliateUrl, '_blank');

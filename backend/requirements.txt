@@ -16,3 +16,4 @@ bcrypt==4.1.2
 # psycopg2-binary==2.9.9  # Temporarily removed for Windows development
 alembic==1.13.1
 stripe==12.4.0
+Flask-Mail==0.9.1

@@ -19,9 +19,9 @@ import { initializeApp } from "firebase/app";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA-HDzYpHcsnWDFU2_OcgJL4Pbrfq2BwNQ",
-  authDomain: "smartbets-5c06f.firebaseapp.com",
-  projectId: "smartbets-5c06f",
-  storageBucket: "smartbets-5c06f.firebasestorage.app",
+  authDomain: "prizmbets-5c06f.firebaseapp.com",
+  projectId: "prizmbets-5c06f",
+  storageBucket: "prizmbets-5c06f.firebasestorage.app",
   messagingSenderId: "729118879083",
   appId: "1:729118879083:web:15d07f682b86098dc1f02e"
 };

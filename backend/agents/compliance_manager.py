@@ -1,5 +1,5 @@
 """
-Compliance Manager Agent for SmartBets 2.0
+Compliance Manager Agent for PrizmBets
 Comprehensive regulatory compliance, legal adherence, and risk management
 """
 

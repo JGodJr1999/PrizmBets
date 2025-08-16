@@ -1,5 +1,5 @@
 """
-Marketing Manager Subagents for SmartBets 2.0
+Marketing Manager Subagents for PrizmBets
 Specialized marketing agents for campaign management, email marketing, and social media
 """
 
@@ -118,7 +118,7 @@ class CampaignManager(BaseAgent):
                     'creatives': [
                         {
                             'type': 'video',
-                            'message': 'Get the edge this NFL season with SmartBets AI',
+                            'message': 'Get the edge this NFL season with PrizmBets AI',
                             'cta': 'Start Free Trial'
                         },
                         {
@@ -524,7 +524,7 @@ class SocialMediaManager(BaseAgent):
                             'topic': 'How to Read NFL Betting Lines',
                             'visual_style': 'infographic',
                             'call_to_action': 'Try our odds calculator',
-                            'hashtags': ['#NFL', '#BettingTips', '#SmartBets', '#Sports'],
+                            'hashtags': ['#NFL', '#BettingTips', '#PrizmBets', '#Sports'],
                             'posting_time': 'optimal_engagement_window'
                         }
                     ]
@@ -572,7 +572,7 @@ class SocialMediaManager(BaseAgent):
             'engagement_strategies': [
                 {
                     'strategy': 'User-generated content campaigns',
-                    'description': 'Encourage users to share winning bet slips with #SmartBetsWin',
+                    'description': 'Encourage users to share winning bet slips with #PrizmBetsWin',
                     'incentive': 'Monthly $500 prize for best submission'
                 },
                 {

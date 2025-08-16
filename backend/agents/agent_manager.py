@@ -1,5 +1,5 @@
 """
-Agent Manager for SmartBets 2.0
+Agent Manager for PrizmBets
 Coordinates all AI agents and handles inter-agent communication
 """
 
@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any
 from .base_agent import BaseAgent, AgentMessage, AgentTask, Priority
 
 class AgentManager:
-    """Central manager for all SmartBets AI agents"""
+    """Central manager for all PrizmBets AI agents"""
     
     def __init__(self):
         self.agents: Dict[str, BaseAgent] = {}

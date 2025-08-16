@@ -1,5 +1,5 @@
 """
-Base Agent Architecture for SmartBets 2.0
+Base Agent Architecture for PrizmBets
 Provides foundational structure for all AI agents
 """
 
@@ -47,7 +47,7 @@ class AgentMessage:
     priority: Priority = Priority.MEDIUM
 
 class BaseAgent(ABC):
-    """Base class for all SmartBets AI agents"""
+    """Base class for all PrizmBets AI agents"""
     
     def __init__(self, agent_id: str, name: str, description: str):
         self.agent_id = agent_id

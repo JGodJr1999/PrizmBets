@@ -1,0 +1,54 @@
+{
+  "name": "PrizmBets API",
+  "description": "AI-powered sports betting intelligence platform backend",
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "pip install -r requirements.txt",
+    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers $WEB_CONCURRENCY --worker-class gevent --worker-connections 1000 --max-requests 1000 --max-requests-jitter 100 run:app"
+  },
+  "deploy": {
+    "environmentVariables": {
+      "FLASK_ENV": "production",
+      "FLASK_DEBUG": "false",
+      "PYTHONPATH": "/app"
+    },
+    "healthcheckPath": "/health",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "services": [
+    {
+      "name": "postgres",
+      "image": "postgres:15",
+      "environmentVariables": {
+        "POSTGRES_DB": "prizmbets_production",
+        "POSTGRES_USER": "${{POSTGRES_USER}}",
+        "POSTGRES_PASSWORD": "${{POSTGRES_PASSWORD}}"
+      },
+      "volumes": [
+        {
+          "mountPath": "/var/lib/postgresql/data",
+          "name": "postgres-data"
+        }
+      ]
+    },
+    {
+      "name": "redis",
+      "image": "redis:7-alpine",
+      "command": ["redis-server", "--requirepass", "${{REDIS_PASSWORD}}"],
+      "volumes": [
+        {
+          "mountPath": "/data",
+          "name": "redis-data"
+        }
+      ]
+    }
+  ],
+  "regions": ["us-west"],
+  "scaling": {
+    "minInstances": 1,
+    "maxInstances": 10,
+    "targetCPU": 70,
+    "targetMemory": 80
+  }
+}

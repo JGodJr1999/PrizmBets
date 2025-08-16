@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 NFL Pick'em Pools Security and Anti-Cheating System
-Comprehensive security measures for SmartBets 2.0 Pick'em
+Comprehensive security measures for PrizmBets Pick'em
 """
 
 import hashlib

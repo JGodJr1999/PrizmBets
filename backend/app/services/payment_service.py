@@ -1,5 +1,5 @@
 """
-SmartBets 2.0 - Payment Service with Stripe Integration
+PrizmBets - Payment Service with Stripe Integration
 Handles subscription management, payment processing, and billing operations
 """
 

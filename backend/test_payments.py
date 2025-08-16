@@ -19,7 +19,7 @@ app.register_blueprint(payments_bp, url_prefix='/api/payments')
 @app.route('/')
 def home():
     return jsonify({
-        'message': 'SmartBets 2.0 Payment Test Server',
+        'message': 'PrizmBets Payment Test Server',
         'status': 'success',
         'stripe_configured': bool(os.environ.get('STRIPE_SECRET_KEY')),
         'endpoints': [
@@ -38,7 +38,7 @@ def health():
     })
 
 if __name__ == '__main__':
-    print("Starting SmartBets 2.0 Payment Test Server...")
+    print("Starting PrizmBets Payment Test Server...")
     print("Testing Stripe integration endpoints")
     print("Available at: http://localhost:5002")
     app.run(debug=True, host='0.0.0.0', port=5002)

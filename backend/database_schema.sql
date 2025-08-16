@@ -1,4 +1,4 @@
--- SmartBets 2.0 Database Schema
+-- PrizmBets Database Schema
 -- Complete SQL schema for user authentication and betting system
 -- Generated for PostgreSQL (can be adapted for SQLite in development)
 
@@ -203,8 +203,8 @@ CREATE TRIGGER update_parlays_updated_at BEFORE UPDATE ON parlays
 
 -- Sample data for development (optional)
 INSERT INTO users (email, password_hash, name, is_verified, subscription_tier) VALUES
-('admin@smartbets.com', 'pbkdf2:sha256:600000$salt$hash', 'Admin User', TRUE, 'admin'),
-('demo@smartbets.com', 'pbkdf2:sha256:600000$salt$hash', 'Demo User', TRUE, 'premium');
+('admin@prizmbets.com', 'pbkdf2:sha256:600000$salt$hash', 'Admin User', TRUE, 'admin'),
+('demo@prizmbets.com', 'pbkdf2:sha256:600000$salt$hash', 'Demo User', TRUE, 'premium');
 
 -- Sample user profiles
 INSERT INTO user_profiles (user_id, timezone, favorite_sports, preferred_sportsbooks, default_bet_amount, risk_tolerance) VALUES
@@ -248,5 +248,5 @@ COMMENT ON COLUMN user_sessions.token_hash IS 'SHA256 hash of refresh token for 
 COMMENT ON COLUMN parlays.parlay_id IS 'UUID identifier for parlay tracking';
 
 -- Grant permissions (adjust as needed for your setup)
--- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO smartbets_app;
--- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO smartbets_app;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO prizmbets_app;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO prizmbets_app;
