@@ -1,20 +1,36 @@
 from flask import Flask
 from flask_cors import CORS
-# Temporarily disabled due to SQLAlchemy version issue
-# from flask_migrate import Migrate
+from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_mail import Mail
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from app.config.settings import config
 from app.models.user import db
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 import os
 
 # Initialize extensions
-# migrate = Migrate()  # Temporarily disabled
+migrate = Migrate()
 jwt = JWTManager()
 mail = Mail()
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app(config_name=None):
     """Application factory pattern for Flask app creation"""
+    
+    # Initialize Sentry for error monitoring
+    sentry_dsn = os.environ.get('SENTRY_DSN')
+    if sentry_dsn and config_name in ['production', 'staging']:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[FlaskIntegration(transaction_style='endpoint')],
+            traces_sample_rate=0.1,  # Capture 10% of transactions for performance monitoring
+            environment=config_name,
+            release=os.environ.get('APP_VERSION', '2.0.0'),
+            before_send=lambda event, hint: event if event.get('level') in ['error', 'fatal'] else None
+        )
     
     app = Flask(__name__)
     
@@ -24,9 +40,10 @@ def create_app(config_name=None):
     
     # Initialize extensions
     db.init_app(app)
-    # migrate.init_app(app, db)  # Temporarily disabled
+    migrate.init_app(app, db)
     jwt.init_app(app)
     mail.init_app(app)
+    limiter.init_app(app)
     
     # Initialize CORS with security settings
     CORS(app, 
@@ -45,12 +62,19 @@ def create_app(config_name=None):
         """Check if token is revoked/blacklisted"""
         from app.models.user import UserSession
         jti = jwt_payload['jti']
+        token_type = jwt_payload.get('type', 'access')  # default to access token
         
         # Check if session exists and is active
-        session = UserSession.query.filter_by(
-            refresh_token_jti=jti,
-            is_active=True
-        ).first()
+        if token_type == 'refresh':
+            session = UserSession.query.filter_by(
+                refresh_token_jti=jti,
+                is_active=True
+            ).first()
+        else:  # access token
+            session = UserSession.query.filter_by(
+                access_token_jti=jti,
+                is_active=True
+            ).first()
         
         if not session:
             return True  # Token is revoked if no active session found
@@ -89,6 +113,8 @@ def create_app(config_name=None):
     from app.routes.email import email_bp
     from app.routes.educational import educational_bp
     from app.routes.usage import usage_bp
+    from app.routes.consent_api import consent_bp
+    from app.routes.email_capture import email_capture_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(payments_bp, url_prefix='/api/payments')
@@ -96,8 +122,10 @@ def create_app(config_name=None):
     app.register_blueprint(pickem_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(email_bp)
+    app.register_blueprint(email_capture_bp)  # Email capture for CPA affiliates
     app.register_blueprint(educational_bp)
     app.register_blueprint(usage_bp, url_prefix='/api/usage')
+    app.register_blueprint(consent_bp)  # Already has /api/user prefix
     
     # Add security headers
     @app.after_request
@@ -106,8 +134,20 @@ def create_app(config_name=None):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        
+        # Configure HSTS only for HTTPS in production
+        if app.config.get('FLASK_ENV') == 'production':
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # Enhanced CSP for production with Stripe integration
+        csp = app.config.get('CONTENT_SECURITY_POLICY', 
+                           "default-src 'self'; "
+                           "script-src 'self' 'unsafe-inline' https://js.stripe.com; "
+                           "style-src 'self' 'unsafe-inline'; "
+                           "img-src 'self' data: https:; "
+                           "connect-src 'self' https://api.stripe.com; "
+                           "frame-src https://js.stripe.com")
+        response.headers['Content-Security-Policy'] = csp
         return response
     
     # Root route

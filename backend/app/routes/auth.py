@@ -16,6 +16,7 @@ from app.utils.jwt_utils import TokenManager, SecurityUtils
 from app.utils.auth_decorators import auth_required, verified_user_required, get_current_user
 from app.services.email_service import EmailService
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from app import limiter
 import logging
 import uuid
 
@@ -26,6 +27,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 logger = logging.getLogger(__name__)
 
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     """
     Register a new user account
@@ -125,6 +127,7 @@ def register():
         }), 500
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     """
     Login user and return JWT tokens

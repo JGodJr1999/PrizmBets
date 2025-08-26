@@ -24,30 +24,48 @@ const SportsContainer = styled.div`
 const Header = styled.div`
   margin-bottom: ${props => props.theme.spacing.xl};
   text-align: center;
-  background: linear-gradient(135deg, rgba(0, 212, 170, 0.1) 0%, rgba(0, 212, 170, 0.05) 100%);
+  background: ${props => props.theme.colors.background.card};
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 212, 170, 0.2);
+  border: 1px solid ${props => props.theme.colors.border.primary};
   border-radius: ${props => props.theme.borderRadius.lg};
   padding: ${props => props.theme.spacing.xl};
   margin: 0 auto ${props => props.theme.spacing.xl} auto;
-  max-width: 600px;
-  box-shadow: 
-    0 8px 32px rgba(0, 212, 170, 0.1),
-    inset 0 1px 0 rgba(0, 212, 170, 0.2);
+  max-width: 800px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: ${props => props.theme.shadows.lg};
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      ${props => props.theme.colors.accent.primary}08 0%, 
+      transparent 50%,
+      ${props => props.theme.colors.accent.primary}08 100%
+    );
+    pointer-events: none;
+  }
+  
+  > * {
+    position: relative;
+    z-index: 1;
+  }
   
   @media (max-width: ${props => props.theme.breakpoints.md}) {
     padding: ${props => props.theme.spacing.lg};
     margin-bottom: ${props => props.theme.spacing.lg};
+    max-width: 600px;
   }
   
   @media (max-width: ${props => props.theme.breakpoints.sm}) {
     padding: ${props => props.theme.spacing.md};
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-    margin-left: -${props => props.theme.spacing.sm};
-    margin-right: -${props => props.theme.spacing.sm};
     max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 `;
 
@@ -185,7 +203,16 @@ const SportButton = styled.button`
 const GamesList = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: ${props => props.theme.spacing.lg};
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  
+  > * {
+    width: 100%;
+    max-width: 900px;
+  }
 `;
 
 const GameCard = styled.div`
@@ -210,7 +237,7 @@ const GameCard = styled.div`
 
 const GameHeader = styled.div`
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: ${props => props.theme.spacing.md};
   flex-wrap: wrap;
@@ -643,7 +670,9 @@ const sportsData = [
   { key: 'soccer', name: 'Premier League', active: true },
   { key: 'mma', name: 'MMA/UFC', active: true },
   { key: 'tennis', name: 'Tennis', active: true },
-  { key: 'golf', name: 'Golf', active: true }
+  { key: 'golf', name: 'Golf', active: true },
+  { key: 'nascar', name: 'NASCAR', active: true },
+  { key: 'f1', name: 'Formula 1', active: true }
 ];
 
 // Simple cache to store API responses for better performance
@@ -671,13 +700,13 @@ const LiveSports = () => {
     return games.filter(game => game && (game.teams || (game.home_team && game.away_team)));
   }, [games]);
 
-  useEffect(() => {
-    loadLiveOdds(selectedSport);
-  }, [selectedSport]);
-
-  const loadLiveOdds = useCallback(async (sport) => {
+  const loadLiveOdds = useCallback(async (sport, retryCount = 0) => {
+    const maxRetries = 2;
+    
     setLoading(true);
-    setError(null);
+    if (retryCount === 0) {
+      setError(null);
+    }
     setSeasonStatus(null);
     setSeasonMessage(null);
     setPropBets(null);
@@ -686,9 +715,9 @@ const LiveSports = () => {
     try {
       let endpoint;
       if (sport === 'all') {
-        endpoint = `http://localhost:5001/api/odds/all-games?per_sport=3&upcoming=true`;
+        endpoint = `/odds/all-games?per_sport=3&upcoming=true`;
       } else {
-        endpoint = `http://localhost:5001/api/odds/comparison/${sport}`;
+        endpoint = `/odds/comparison/${sport}`;
       }
       
       // Check cache first
@@ -717,7 +746,22 @@ const LiveSports = () => {
         return;
       }
       
-      const response = await fetch(endpoint);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api${endpoint}`, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       // Cache the response
@@ -761,9 +805,40 @@ const LiveSports = () => {
         throw new Error(data.error || 'Failed to load odds');
       }
     } catch (err) {
-      console.error('Failed to load live odds:', err);
-      setError(err.message);
-      setGames([]);
+      console.error(`Failed to load live odds (attempt ${retryCount + 1}):`, err);
+      
+      // Retry logic
+      if (retryCount < maxRetries && (err.name === 'AbortError' || err.message.includes('fetch'))) {
+        console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
+        setTimeout(() => {
+          loadLiveOdds(sport, retryCount + 1);
+        }, (retryCount + 1) * 2000); // Progressive delay
+        return;
+      }
+      
+      // Final error handling
+      const errorMessage = err.name === 'AbortError' 
+        ? 'Request timed out. Please check your connection and try again.'
+        : err.message.includes('Failed to fetch')
+        ? 'Unable to connect to server. Please check your connection and try again.'
+        : err.message;
+      
+      setError(errorMessage);
+      
+      // Try to use any cached data as fallback
+      const endpointForCache = sport === 'all' 
+        ? `/odds/all-games?per_sport=3&upcoming=true` 
+        : `/odds/comparison/${sport}`;
+      const cacheKey = `${sport}_${endpointForCache}`;
+      const fallbackCache = apiCache.get(cacheKey);
+      if (fallbackCache) {
+        console.log('Using fallback cached data');
+        setGames(fallbackCache.data.games || []);
+        setIsDemoMode(true); // Mark as demo since it's fallback data
+      } else {
+        setGames([]);
+      }
+      
       setSeasonStatus(null);
       setSeasonMessage(null);
       setPropBets(null);
@@ -772,6 +847,10 @@ const LiveSports = () => {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadLiveOdds(selectedSport);
+  }, [selectedSport, loadLiveOdds]);
 
   const formatOdds = (odds) => {
     if (odds > 0) return `+${odds}`;
@@ -826,15 +905,24 @@ const LiveSports = () => {
   };
 
   const handleBetClick = (sportsbook, team, sport, betAmount, odds) => {
-    // Generate affiliate link with bet amount
-    const affiliateUrl = `https://sportsbook.${sportsbook}.com?ref=prizmbets&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
+    // Safe sportsbook homepage links - no affiliate tracking or bet facilitation
+    const sportsbookUrls = {
+      'draftkings': 'https://www.draftkings.com',
+      'fanduel': 'https://www.fanduel.com',
+      'betmgm': 'https://www.betmgm.com',
+      'caesars': 'https://www.caesars.com/sportsbook',
+      'betrivers': 'https://www.betrivers.com',
+      'espnbet': 'https://espnbet.com',
+      'fanatics': 'https://fanatics.com/betting'
+    };
     
-    // Open in new tab
-    window.open(affiliateUrl, '_blank');
+    const sportsbookUrl = sportsbookUrls[sportsbook.toLowerCase()] || `https://www.${sportsbook.toLowerCase()}.com`;
     
-    // Show success message with potential profit
-    const { profit } = calculatePayout(formatOdds(odds), betAmount);
-    toast.success(`Opening ${sportsbook.toUpperCase()} - $${betAmount} bet could win $${profit.toFixed(2)}!`);
+    // Open sportsbook homepage in new tab
+    window.open(sportsbookUrl, '_blank');
+    
+    // Show informational message
+    toast.info(`Opening ${sportsbook.toUpperCase()} - Remember to bet responsibly!`);
   };
 
   const calculatePayout = (odds, betAmount) => {
@@ -890,18 +978,23 @@ const LiveSports = () => {
   };
 
   const handlePropBetClick = (team, odds, betType, sport, betAmount) => {
-    // Generate prop bet affiliate link (rotating through major sportsbooks)
-    const sportsbooks = ['draftkings', 'fanduel', 'betmgm', 'caesars'];
+    // Safe sportsbook homepage links - no affiliate tracking or bet facilitation
+    const sportsbookUrls = {
+      'draftkings': 'https://www.draftkings.com',
+      'fanduel': 'https://www.fanduel.com',
+      'betmgm': 'https://www.betmgm.com',
+      'caesars': 'https://www.caesars.com/sportsbook'
+    };
+    const sportsbooks = Object.keys(sportsbookUrls);
     const randomSportsbook = sportsbooks[Math.floor(Math.random() * sportsbooks.length)];
     
-    const affiliateUrl = `https://sportsbook.${randomSportsbook}.com?ref=prizmbets&prop=${encodeURIComponent(betType)}&team=${encodeURIComponent(team)}&sport=${sport}&amount=${betAmount}`;
+    const sportsbookUrl = sportsbookUrls[randomSportsbook];
     
-    // Open in new tab
-    window.open(affiliateUrl, '_blank');
+    // Open sportsbook homepage in new tab
+    window.open(sportsbookUrl, '_blank');
     
-    // Show success message with bet details
-    const { profit } = calculatePayout(odds, betAmount);
-    toast.success(`Opening ${randomSportsbook.toUpperCase()} - $${betAmount} bet could win $${profit.toFixed(2)}!`);
+    // Show informational message
+    toast.info(`Opening ${randomSportsbook.toUpperCase()} - Remember to bet responsibly!`);
   };
 
   if (loading) {
@@ -1136,10 +1229,22 @@ const LiveSports = () => {
 
                 return (
                   <SportsbookCard key={sportsbook}>
-                    {(hasBestHome || hasBestAway) && (
+                    {hasBestHome && hasBestAway && (
                       <BestOddsBadge>
                         <Star size={10} />
-                        Best
+                        Best Both
+                      </BestOddsBadge>
+                    )}
+                    {hasBestHome && !hasBestAway && (
+                      <BestOddsBadge>
+                        <Star size={10} />
+                        Best Home
+                      </BestOddsBadge>
+                    )}
+                    {hasBestAway && !hasBestHome && (
+                      <BestOddsBadge>
+                        <Star size={10} />
+                        Best Away
                       </BestOddsBadge>
                     )}
                     

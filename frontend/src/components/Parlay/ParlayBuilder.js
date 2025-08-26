@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Plus, Trash2, DollarSign, AlertCircle, Brain, Search, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, DollarSign, AlertCircle, Brain, Search, RefreshCw, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OddsComparison from '../Odds/OddsComparison';
 
@@ -343,7 +343,8 @@ const ParlayBuilder = ({ onEvaluate, isLoading }) => {
   const loadAvailableSports = async () => {
     try {
       setSportsLoading(true);
-      const response = await fetch('http://localhost:5001/api/odds/sports');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/api/odds/sports`);
       const data = await response.json();
       
       if (data.success) {
@@ -363,25 +364,25 @@ const ParlayBuilder = ({ onEvaluate, isLoading }) => {
           setSelectedSport(activeSports[0].value);
         }
       } else {
-        // Fallback to basic sports list
+        // Fallback to basic sports list without showing error
         setAvailableSports([
           { value: 'nfl', label: 'NFL', active: true, season_status: 'active' },
           { value: 'nba', label: 'NBA', active: true, season_status: 'active' },
           { value: 'mlb', label: 'MLB', active: true, season_status: 'active' },
           { value: 'nhl', label: 'NHL', active: true, season_status: 'active' }
         ]);
-        toast.error('Using basic sports list - enhanced sports data unavailable');
+        console.log('Using fallback sports list - API returned unsuccessful response');
       }
     } catch (error) {
       console.error('Failed to load sports:', error);
-      // Fallback to basic sports list
+      // Fallback to basic sports list without showing error toast
       setAvailableSports([
         { value: 'nfl', label: 'NFL', active: true, season_status: 'active' },
         { value: 'nba', label: 'NBA', active: true, season_status: 'active' },
         { value: 'mlb', label: 'MLB', active: true, season_status: 'active' },
         { value: 'nhl', label: 'NHL', active: true, season_status: 'active' }
       ]);
-      toast.error('Failed to load sports data');
+      console.log('Using fallback sports list - API request failed');
     } finally {
       setSportsLoading(false);
     }
@@ -696,6 +697,25 @@ const ParlayBuilder = ({ onEvaluate, isLoading }) => {
           <span>Individual Bets Total: ${totalBetAmount.toFixed(2)}</span>
           <span>Parlay Total: ${parseFloat(totalAmount || 0).toFixed(2)}</span>
         </TotalRow>
+        
+        <div style={{ 
+          background: '#ff8c4220', 
+          border: '1px solid #ff8c42', 
+          borderRadius: '8px', 
+          padding: '12px', 
+          margin: '16px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.85rem',
+          color: '#ff8c42'
+        }}>
+          <AlertTriangle size={16} />
+          <div>
+            <strong>⚠️ For informational purposes only.</strong> This analysis is not gambling advice. 
+            PrizmBets does not place bets or guarantee outcomes.
+          </div>
+        </div>
         
         <EvaluateButton 
           onClick={handleEvaluate} 

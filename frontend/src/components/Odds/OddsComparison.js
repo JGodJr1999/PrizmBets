@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { ExternalLink, TrendingUp, TrendingDown, Clock, AlertCircle, Star } from 'lucide-react';
+import { ExternalLink, TrendingUp, TrendingDown, Clock, AlertCircle, Star, Info } from 'lucide-react';
 import { apiService } from '../../services/api';
 import LoadingSpinner from '../UI/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -224,6 +224,19 @@ const LastUpdated = styled.div`
   margin-top: ${props => props.theme.spacing.md};
 `;
 
+const DisclaimerBox = styled.div`
+  background: ${props => props.theme.colors.background.secondary};
+  border: 1px solid ${props => props.theme.colors.border.accent};
+  border-radius: ${props => props.theme.borderRadius.md};
+  padding: ${props => props.theme.spacing.md};
+  margin-top: ${props => props.theme.spacing.lg};
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
 const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
   const [oddsData, setOddsData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -258,23 +271,25 @@ const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
     fetchOdds();
   }, [team, betType, sport]);
 
-  const handleBetClick = async (sportsbook) => {
-    try {
-      const response = await apiService.getSportsbookDeepLink({
-        sportsbook,
-        team,
-        sport
-      });
-      
-      // Open sportsbook in new tab
-      window.open(response.deep_link, '_blank', 'noopener,noreferrer');
-      
-      // Track the click for analytics
-      toast.success(`Redirecting to ${sportsbook.toUpperCase()}...`);
-      
-    } catch (err) {
-      toast.error('Failed to redirect to sportsbook');
-    }
+  const handleBetClick = (sportsbook) => {
+    // Safe sportsbook homepage links - no affiliate tracking
+    const sportsbookUrls = {
+      'draftkings': 'https://www.draftkings.com',
+      'fanduel': 'https://www.fanduel.com',
+      'betmgm': 'https://www.betmgm.com',
+      'caesars': 'https://www.caesars.com/sportsbook',
+      'betrivers': 'https://www.betrivers.com',
+      'espnbet': 'https://espnbet.com',
+      'fanatics': 'https://fanatics.com/betting'
+    };
+    
+    const sportsbookUrl = sportsbookUrls[sportsbook.toLowerCase()] || `https://www.${sportsbook.toLowerCase()}.com`;
+    
+    // Open sportsbook homepage in new tab
+    window.open(sportsbookUrl, '_blank', 'noopener,noreferrer');
+    
+    // Show informational message
+    toast.info(`Opening ${sportsbook.toUpperCase()} - Odds for informational purposes only`);
   };
 
   const formatOdds = (odds) => {
@@ -376,7 +391,7 @@ const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
                       onClick={() => handleBetClick(sportsbook)}
                     >
                       <ExternalLink size={12} />
-                      Bet Now
+                      View Odds
                     </BetButton>
                   </SportsbookOdds>
                 );
@@ -413,6 +428,13 @@ const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
             Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
             {oddsData.fallback_data && ' (Using sample data)'}
           </LastUpdated>
+          
+          <DisclaimerBox>
+            <Info size={16} />
+            <div>
+              <strong>📊 Price comparison for informational purposes only.</strong> Links to sportsbooks are provided for reference only. PrizmBets receives no compensation from your betting activity and does not facilitate betting.
+            </div>
+          </DisclaimerBox>
         </>
       ) : (
         <EmptyState>

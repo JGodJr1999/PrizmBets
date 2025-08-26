@@ -219,7 +219,7 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
         premium: {
           name: 'Premium',
           price: 59.99,
-          features: ['Everything in Pro', 'Personal betting consultant', 'Advanced analytics', 'VIP support'],
+          features: ['Everything in Pro', 'Advanced analytics', 'VIP support', 'Priority customer support'],
           monthly_evaluations: 'unlimited',
           daily_evaluations: -1,
           daily_odds_comparisons: -1

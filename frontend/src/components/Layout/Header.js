@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown } from 'lucide-react';
+import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown, Activity, Target } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
 
 const HeaderContainer = styled.header`
@@ -29,8 +29,9 @@ const Logo = styled.div`
   gap: ${props => props.theme.spacing.sm};
   color: ${props => props.theme.colors.accent.primary};
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
+  white-space: nowrap;
   
   &:hover {
     opacity: 0.8;
@@ -56,10 +57,32 @@ const Logo = styled.div`
   }
 `;
 
+const LogoText = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+`;
+
 const Nav = styled.nav`
   display: flex;
   align-items: center;
   gap: ${props => props.theme.spacing.lg};
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  flex-wrap: nowrap;
+  
+  /* Hide scrollbar but allow scrolling */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
   
   @media (max-width: ${props => props.theme.breakpoints.lg}) {
     gap: ${props => props.theme.spacing.md};
@@ -77,6 +100,8 @@ const Nav = styled.nav`
     gap: 0;
     padding: ${props => props.theme.spacing.md} 0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow-x: visible;
+    overflow-y: visible;
   }
 `;
 
@@ -332,7 +357,7 @@ const Header = ({ user = null, onLogout }) => {
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/parlay');
     setIsMobileMenuOpen(false);
   };
 
@@ -345,7 +370,10 @@ const Header = ({ user = null, onLogout }) => {
       <HeaderContent>
         <Logo onClick={handleLogoClick}>
           <Brain size={28} />
-          Prizm Bets
+          <LogoText>
+            <span>Prizm</span>
+            <span>Bets</span>
+          </LogoText>
           <BetaTag>BETA</BetaTag>
         </Logo>
         
@@ -355,19 +383,19 @@ const Header = ({ user = null, onLogout }) => {
         
         <Nav isOpen={isMobileMenuOpen}>
           <NavItem 
-            active={isActive('/')}
-            onClick={() => handleNavigation('/')}
-          >
-            <TrendingUp size={16} />
-            Build Parlay
-          </NavItem>
-          
-          <NavItem 
             active={isActive('/live-sports')}
             onClick={() => handleNavigation('/live-sports')}
           >
             <Zap size={16} />
             Live Sports
+          </NavItem>
+          
+          <NavItem 
+            active={isActive('/live-scores')}
+            onClick={() => handleNavigation('/live-scores')}
+          >
+            <Activity size={16} />
+            Live Scores
           </NavItem>
           
           <NavItem 
@@ -387,27 +415,19 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
           
           <NavItem 
+            active={isActive('/bet-tracking')}
+            onClick={() => handleNavigation('/bet-tracking')}
+          >
+            <Target size={16} />
+            Bet Tracking
+          </NavItem>
+          
+          <NavItem 
             active={isActive('/betting-data')}
             onClick={() => handleNavigation('/betting-data')}
           >
             <Upload size={16} />
             Upload Data
-          </NavItem>
-          
-          <NavItem 
-            active={isActive('/tutorials')}
-            onClick={() => handleNavigation('/tutorials')}
-          >
-            <BookOpen size={16} />
-            Tutorials
-          </NavItem>
-          
-          <NavItem 
-            active={isActive('/demo-parlays')}
-            onClick={() => handleNavigation('/demo-parlays')}
-          >
-            <Lightbulb size={16} />
-            Demo Parlays
           </NavItem>
           
           <NavItem 

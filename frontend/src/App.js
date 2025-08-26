@@ -6,6 +6,7 @@ import { GlobalStyles } from './styles/GlobalStyles';
 import { theme } from './styles/theme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Layout/Header';
+import Footer from './components/Layout/Footer';
 import HomePage from './pages/HomePage';
 import ParlayPage from './pages/ParlayPage';
 import LoginPage from './pages/LoginPage';
@@ -22,9 +23,10 @@ import FantasyComingSoonPage from './pages/FantasyComingSoonPage';
 import SportsProjectionsPage from './pages/SportsProjectionsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import BettingDataPage from './pages/BettingDataPage';
-import TutorialsPage from './pages/TutorialsPage';
-import DemoParlaysPage from './pages/DemoParlaysPage';
+import LiveScoresPage from './pages/LiveScoresPage';
 import AdminPage from './pages/AdminPage';
+import BetTrackingPage from './components/BetTracking/BetTrackingPage';
+import AffiliateDisclosurePage from './pages/AffiliateDisclosurePage';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
@@ -138,6 +140,14 @@ const AppContent = () => {
           element={<BettingDataPage />}
         />
         <Route 
+          path="/bet-tracking" 
+          element={
+            <ProtectedRoute>
+              <BetTrackingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path="/pick-em" 
           element={<PickEmPageDemo />}
         />
@@ -150,12 +160,8 @@ const AppContent = () => {
           element={<FantasyComingSoonPage />}
         />
         <Route 
-          path="/tutorials" 
-          element={<TutorialsPage />}
-        />
-        <Route 
-          path="/demo-parlays" 
-          element={<DemoParlaysPage />}
+          path="/live-scores" 
+          element={<LiveScoresPage />}
         />
         <Route 
           path="/admin" 
@@ -165,9 +171,14 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        <Route 
+          path="/affiliate-disclosure" 
+          element={<AffiliateDisclosurePage />}
+        />
         {/* Catch-all route for 404 errors */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <Footer />
       <Toaster 
         position="top-right"
         toastOptions={{

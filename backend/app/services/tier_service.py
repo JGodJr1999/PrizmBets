@@ -39,9 +39,9 @@ class TierService:
                 'Unlimited parlay evaluations',
                 'Unlimited odds comparisons', 
                 'Advanced AI insights',
-                'Priority support',
+                'Email bet tracking with consent',
                 'Export betting history',
-                'Custom alerts'
+                'Smart Signals alerts'
             ]
         },
         'premium': {

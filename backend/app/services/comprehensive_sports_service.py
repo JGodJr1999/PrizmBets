@@ -134,12 +134,28 @@ class ComprehensiveSportsService:
                 'offseason': {'start': (11, 30), 'end': (12, 15)}      # Nov 30 - Dec 15
             },
             'golf': {
-                'key': 'golf_pga_championship', 
+                'key': 'golf_pga', 
                 'name': 'PGA Golf',
                 'regular_season': {'start': (1, 1), 'end': (12, 31)},  # Year-round
                 'playoffs': {'start': (8, 15), 'end': (9, 15)},        # Aug 15 - Sep 15 (FedEx Cup)
                 'preseason': {'start': (1, 1), 'end': (1, 1)},         # No traditional preseason
                 'offseason': {'start': (1, 1), 'end': (1, 1)}          # No traditional offseason
+            },
+            'nascar': {
+                'key': 'motorsport_nascar', 
+                'name': 'NASCAR',
+                'regular_season': {'start': (2, 1), 'end': (9, 15)},   # Feb - Sep
+                'playoffs': {'start': (9, 15), 'end': (11, 15)},       # Sep - Nov
+                'preseason': {'start': (1, 1), 'end': (2, 1)},         # Jan - Feb
+                'offseason': {'start': (11, 15), 'end': (1, 1)}        # Nov - Jan
+            },
+            'f1': {
+                'key': 'motorsport_formula1', 
+                'name': 'Formula 1',
+                'regular_season': {'start': (3, 1), 'end': (12, 1)},   # Mar - Dec
+                'playoffs': {'start': (1, 1), 'end': (1, 1)},          # No playoffs
+                'preseason': {'start': (1, 15), 'end': (3, 1)},        # Jan 15 - Mar
+                'offseason': {'start': (12, 1), 'end': (1, 15)}        # Dec - Jan 15
             }
         }
 

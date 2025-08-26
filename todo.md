@@ -1,8 +1,66 @@
-# PrizmBets - Production Launch Todo
+# PrizmBets - Enhanced Features Implementation
 
-## 🚀 Current Focus: Pre-Launch Free Tier Implementation
+## 🚀 CURRENT FOCUS: CEO Enhancement Plan - Phase 1
 
-### Phase 1: Free Tier Implementation (PRIORITY ORDER)
+### Phase 1: Security Foundation & Legal Compliance
+- [x] Create comprehensive todo.md tracking system ✅ **UPDATED - 2025-01-25**
+- [x] Build consent UI component for email parser ✅ **COMPLETED - 2025-01-25**
+- [x] Create consent database schema ✅ **COMPLETED - 2025-01-25** 
+- [x] Implement consent recording backend ✅ **COMPLETED - 2025-01-25**
+- [x] Add cryptography package for encryption ✅ **COMPLETED - 2025-01-25**
+- [x] Add BetTracking route to frontend ✅ **COMPLETED - 2025-01-25**
+- [x] Add navigation link to header ✅ **COMPLETED - 2025-01-25**
+- [ ] Create database migration for consent models
+- [ ] Add rate limiting middleware
+- [ ] Set up Sentry error monitoring
+
+### Phase 2: Email Parser with Consent (GAME CHANGER)
+- [ ] Set up secure email infrastructure (bets@prizmbets.app)
+- [ ] Build email parsing service with security
+- [ ] Implement DraftKings email parser
+- [ ] Implement FanDuel email parser  
+- [ ] Implement BetMGM email parser
+- [ ] Add AES-256 data encryption for bet data
+- [ ] Set up automatic email deletion after processing
+- [ ] Create manual bet entry fallback
+- [ ] Test email parsing flow end-to-end
+
+### Phase 3: PrizmBot (Analytics-Only Assistant)
+- [ ] Create legal disclaimer system for all responses
+- [ ] Build prohibited phrase detection (no picks ever)
+- [ ] Implement analytics-only response templates
+- [ ] Add conversation audit logging
+- [ ] Create chat UI component
+- [ ] Add question limit enforcement (Free: 5/day, Pro: 25/day, Elite: unlimited)
+- [ ] Test against pick-requesting queries
+
+### Phase 4: Smart Signals (Pro Feature Only)
+- [ ] Set up odds monitoring service
+- [ ] Create line movement detection
+- [ ] Build alert template system (data only, no advice)
+- [ ] Implement push notification delivery
+- [ ] Add user alert preferences and toggles
+- [ ] Create controls for alert types (line moves, sharp money, etc)
+- [ ] Gate feature behind Pro subscription ($14.99+)
+
+### Phase 5: Enhanced Subscription System  
+- [ ] Update subscription pricing (Free, Pro $14.99, Elite $24.99)
+- [ ] Remove API access from all tiers (internal only)
+- [ ] Build upgrade/downgrade flow
+- [ ] Implement payment failure handling
+- [ ] Add trial period logic
+- [ ] Create billing dashboard
+- [ ] Test subscription management
+
+### Phase 6: Referral System (Simple & Legal)
+- [ ] Generate unique referral codes
+- [ ] Create referral tracking system
+- [ ] Build social sharing widgets
+- [ ] Implement 1 month free Pro reward (max 3/year)
+- [ ] Add usage limits and expiration
+- [ ] Create referral dashboard
+
+## ORIGINAL FREE TIER TASKS (MAINTAIN EXISTING WORK)
 - [x] 1. Create Free Tier Logic - Limit parlays without payment ✅ **COMPLETED**
   - [x] Security Audit: Input validation, race conditions, authorization ✅ **SECURITY VERIFIED**
 - [ ] 2. Build Admin Dashboard - Monitor users and system  
@@ -10,7 +68,7 @@
 - [ ] 4. Prepare Production Config - Environment variables for prizmbets.app
 - [ ] 5. Create Sample Content - Demo parlays and tutorials
 
-### Phase 2: User Experience & Testing
+### User Experience & Testing (Ongoing)
 - [ ] 6. Test complete user journey (register → use → hit limit → see upgrade)
 - [ ] 7. Optimize performance for production load
 - [ ] 8. Create user documentation/FAQ

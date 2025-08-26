@@ -12,9 +12,13 @@ export const GlobalStyles = createGlobalStyle`
     background: ${props => props.theme.colors.background.primary};
     color: ${props => props.theme.colors.text.primary};
     line-height: 1.6;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    overflow-y: auto;
+    overscroll-behavior-x: contain;
     position: relative;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
   }
 
   body::before {
@@ -34,6 +38,16 @@ export const GlobalStyles = createGlobalStyle`
 
   #root {
     min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* Prevent horizontal scrolling on main containers */
+  main {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
   /* Custom scrollbar */
@@ -149,8 +163,10 @@ export const GlobalStyles = createGlobalStyle`
     
     /* Prevent horizontal scroll */
     body, html {
-      overflow-x: hidden;
+      overflow-x: hidden !important;
       width: 100%;
+      max-width: 100vw;
+      overscroll-behavior-x: contain;
     }
     
     /* Improved tap targets */

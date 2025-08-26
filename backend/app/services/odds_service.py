@@ -34,9 +34,13 @@ class TheOddsAPIService:
             'soccer': 'soccer_epl',
             'mma': 'mma_mixed_martial_arts',
             'tennis': 'tennis_atp',
+            'golf': 'golf_pga',
             'ufc': 'mma_mixed_martial_arts',
             'premier_league': 'soccer_epl',
-            'champions_league': 'soccer_uefa_champs_league'
+            'champions_league': 'soccer_uefa_champs_league',
+            'nascar': 'motorsport_nascar',
+            'f1': 'motorsport_formula1',
+            'formula1': 'motorsport_formula1'
         }
         
         # Major US sportsbooks supported by The Odds API
@@ -211,33 +215,28 @@ class TheOddsAPIService:
             'message': 'Using fallback odds - API unavailable'
         }
 
-    def get_sportsbook_deep_link(self, sportsbook: str, sport: str, team: str) -> str:
+    def get_sportsbook_link(self, sportsbook: str) -> str:
         """
-        Generate deep link to sportsbook for specific bet
+        Get safe sportsbook homepage link (no affiliate tracking or bet facilitation)
         
         Args:
             sportsbook: Sportsbook name
-            sport: Sport type
-            team: Team name
             
         Returns:
-            Deep link URL (placeholder for now)
+            Safe homepage URL for informational purposes only
         """
-        # These would be actual affiliate links in production
-        base_urls = {
-            'draftkings': 'https://sportsbook.draftkings.com',
-            'fanduel': 'https://sportsbook.fanduel.com',
-            'betmgm': 'https://sports.betmgm.com',
+        # Safe sportsbook homepage links - no affiliate tracking
+        sportsbook_homepages = {
+            'draftkings': 'https://www.draftkings.com',
+            'fanduel': 'https://www.fanduel.com',
+            'betmgm': 'https://www.betmgm.com',
             'caesars': 'https://www.caesars.com/sportsbook',
-            'betrivers': 'https://www.betrivers.com'
+            'betrivers': 'https://www.betrivers.com',
+            'espnbet': 'https://espnbet.com',
+            'fanatics': 'https://fanatics.com/betting'
         }
         
-        base_url = base_urls.get(sportsbook, 'https://example.com')
-        
-        # Add affiliate tracking parameters
-        affiliate_params = f"?ref=prizmbets&utm_source=prizmbets&team={team}&sport={sport}"
-        
-        return f"{base_url}{affiliate_params}"
+        return sportsbook_homepages.get(sportsbook.lower(), f"https://www.{sportsbook.lower()}.com")
 
     def get_odds_movement(self, sport: str, team: str, hours_back: int = 24) -> Dict[str, Any]:
         """
@@ -374,9 +373,9 @@ class OddsService:
         else:
             return f"Similar odds across books - {odds_data['best_sportsbook']} has slight edge"
     
-    def get_deep_link(self, sportsbook: str, sport: str, team: str) -> str:
-        """Get affiliate deep link to sportsbook"""
-        return self.odds_api.get_sportsbook_deep_link(sportsbook, sport, team)
+    def get_sportsbook_link(self, sportsbook: str) -> str:
+        """Get safe sportsbook homepage link"""
+        return self.odds_api.get_sportsbook_link(sportsbook)
     
     def get_line_movement(self, bet_id: str) -> Dict[str, Any]:
         """Get historical line movement data"""

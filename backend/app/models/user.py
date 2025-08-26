@@ -252,7 +252,14 @@ class UserSession(db.Model):
     
     def is_expired(self):
         """Check if session is expired"""
-        return datetime.now(timezone.utc) > self.expires_at
+        now = datetime.now(timezone.utc)
+        expires_at = self.expires_at
+        
+        # Handle timezone-naive expires_at by making it UTC-aware
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+        return now > expires_at
     
     def update_last_used(self):
         """Update last used timestamp"""

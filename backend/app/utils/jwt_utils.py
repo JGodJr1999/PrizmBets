@@ -24,10 +24,6 @@ class TokenManager:
         Returns tuple: (access_token, refresh_token, session_id)
         """
         try:
-            # Generate JTI (JWT ID) for both tokens
-            access_jti = str(uuid.uuid4())
-            refresh_jti = str(uuid.uuid4())
-            
             # Additional claims for tokens
             claims = additional_claims or {}
             claims.update({
@@ -46,6 +42,14 @@ class TokenManager:
                 identity=user_id,
                 additional_claims={'type': 'refresh'}
             )
+            
+            # Decode the tokens to get the actual JTIs
+            from flask_jwt_extended import decode_token
+            access_token_data = decode_token(access_token)
+            refresh_token_data = decode_token(refresh_token)
+            
+            access_jti = access_token_data['jti']
+            refresh_jti = refresh_token_data['jti']
             
             # Create session record
             session = TokenManager._create_session_record(

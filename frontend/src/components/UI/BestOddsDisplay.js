@@ -76,6 +76,7 @@ const BetButton = styled.a`
   cursor: pointer;
   transition: all 0.3s ease;
   width: 100%;
+  margin-top: ${props => props.theme.spacing.sm};
 
   &:hover {
     transform: translateY(-2px);
@@ -95,6 +96,8 @@ const ValueIndicator = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${props => props.theme.spacing.xs};
+  margin: 0 auto ${props => props.theme.spacing.md} auto;
+  width: fit-content;
 `;
 
 const BestOddsDisplay = ({ 
@@ -127,10 +130,18 @@ const BestOddsDisplay = ({
 
   const valueDiff = parseOdds(bestOdds.odds) - parseOdds(worstOdds.odds);
 
-  // Generate affiliate link (placeholder for now)
-  const generateAffiliateLink = (sportsbook, url) => {
-    // This will be replaced with actual affiliate tracking when we join programs
-    return `${url}?ref=prizmbets&utm_source=prizmbets&utm_medium=ai_top5&utm_campaign=${betTitle.replace(/\s+/g, '_').toLowerCase()}`;
+  // Generate safe sportsbook homepage link (no affiliate tracking)
+  const getSportsbookLink = (sportsbook) => {
+    const sportsbookUrls = {
+      'draftkings': 'https://www.draftkings.com',
+      'fanduel': 'https://www.fanduel.com',
+      'betmgm': 'https://www.betmgm.com',
+      'caesars': 'https://www.caesars.com/sportsbook',
+      'betrivers': 'https://www.betrivers.com',
+      'espnbet': 'https://espnbet.com',
+      'fanatics': 'https://fanatics.com/betting'
+    };
+    return sportsbookUrls[sportsbook.toLowerCase()] || `https://www.${sportsbook.toLowerCase()}.com`;
   };
 
   return (
@@ -160,12 +171,12 @@ const BestOddsDisplay = ({
       )}
 
       <BetButton 
-        href={generateAffiliateLink(bestOdds.sportsbook, bestOdds.url)}
+        href={getSportsbookLink(bestOdds.sportsbook)}
         target="_blank"
         rel="noopener noreferrer"
       >
         <SportsbookLogo sportsbook={bestOdds.sportsbook} />
-        Bet {bestOdds.odds} Now
+        View {bestOdds.odds} Odds
         <ExternalLink size={16} />
       </BetButton>
     </BestOddsContainer>

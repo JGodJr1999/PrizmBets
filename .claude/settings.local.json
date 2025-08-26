@@ -50,7 +50,15 @@
       "Bash(find:*)",
       "Bash(mv:*)",
       "Bash(cat:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(lsof:*)",
+      "Bash(npm:*)",
+      "Bash(PORT=3001 npm start)",
+      "WebFetch(domain:the-odds-api.com)",
+      "WebSearch",
+      "Bash(source:*)",
+      "Bash(PORT=3000 npm start)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

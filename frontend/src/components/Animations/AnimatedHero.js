@@ -111,10 +111,21 @@ const SecondaryButton = styled(motion.button)`
 
 const StatsContainer = styled(motion.div)`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: ${props => props.theme.spacing.xl};
-  margin-top: ${props => props.theme.spacing.xxl};
-  max-width: 700px;
+  margin: ${props => props.theme.spacing.xxl} auto 0;
+  max-width: 800px;
+  width: 100%;
+  justify-items: center;
+  
+  @media (max-width: ${props => props.theme.breakpoints.md}) {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+  }
+  
+  @media (max-width: ${props => props.theme.breakpoints.sm}) {
+    gap: ${props => props.theme.spacing.lg};
+  }
 `;
 
 const StatCard = styled(motion.div)`
@@ -124,6 +135,13 @@ const StatCard = styled(motion.div)`
   border: 1px solid ${props => props.theme.colors.border.primary};
   border-radius: ${props => props.theme.borderRadius.lg};
   backdrop-filter: blur(10px);
+  width: 100%;
+  max-width: 220px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 `;
 
 const StatIcon = styled.div`
@@ -214,12 +232,12 @@ const AnimatedHero = ({ onGetStarted, onLearnMore }) => {
       
       <ContentWrapper>
         <MainTitle variants={itemVariants}>
-          Your Complete Sports Betting Hub
+          Track & Analyze Your Sports Bets
         </MainTitle>
         
         <Subtitle variants={itemVariants}>
-          Track all your bets, analyze live sports data, and manage your betting portfolio 
-          from every sportsbook in one intelligent platform.
+          PrizmBets helps you make smarter decisions with AI-powered analytics. 
+          We are not a sportsbook and do not facilitate betting.
         </Subtitle>
         
         <CTAContainer variants={itemVariants}>
