@@ -1,4 +1,18 @@
 {
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "python312",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
   "hosting": {
     "public": "frontend/build",
     "ignore": [
@@ -8,11 +22,40 @@
     ],
     "rewrites": [
       {
+        "source": "/api/health",
+        "function": "api_health"
+      },
+      {
+        "source": "/api/evaluate",
+        "function": "api_evaluate"
+      },
+      {
+        "source": "/api/odds/comparison/**",
+        "function": "api_odds_comparison"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ],
     "headers": [
+      {
+        "source": "/api/**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          {
+            "key": "Access-Control-Allow-Headers",
+            "value": "Content-Type, Authorization"
+          }
+        ]
+      },
       {
         "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
         "headers": [
@@ -43,6 +86,9 @@
     },
     "firestore": {
       "port": 8080
+    },
+    "functions": {
+      "port": 5001
     },
     "hosting": {
       "port": 5000

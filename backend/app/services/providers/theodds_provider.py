@@ -53,7 +53,7 @@ class TheOddsAPIProvider(BaseSportsProvider):
         # Priority sportsbooks (in order of preference)
         self.priority_sportsbooks = [
             'draftkings', 'fanduel', 'betmgm', 'caesars', 
-            'betrivers', 'espnbet', 'fanatics', 'bet365'
+            'betrivers', 'circa', 'espnbet', 'fanatics', 'bet365'
         ]
         
         self.rate_limit_delay = 1.2  # The Odds API rate limiting

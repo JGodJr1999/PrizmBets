@@ -384,7 +384,7 @@ class ComprehensiveSportsService:
                     book_key = bookmaker.get('key', 'unknown')
                     
                     # Only include supported sportsbooks
-                    supported_books = ['draftkings', 'fanduel', 'betmgm', 'caesars', 'betrivers', 'espnbet']
+                    supported_books = ['draftkings', 'fanduel', 'betmgm', 'caesars', 'betrivers', 'circa', 'espnbet']
                     if book_key not in supported_books:
                         continue
                         

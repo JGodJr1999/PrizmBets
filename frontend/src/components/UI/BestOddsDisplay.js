@@ -138,6 +138,7 @@ const BestOddsDisplay = ({
       'betmgm': 'https://www.betmgm.com',
       'caesars': 'https://www.caesars.com/sportsbook',
       'betrivers': 'https://www.betrivers.com',
+      'circa': 'https://www.circasports.com',
       'espnbet': 'https://espnbet.com',
       'fanatics': 'https://fanatics.com/betting'
     };

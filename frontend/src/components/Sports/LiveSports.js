@@ -912,6 +912,7 @@ const LiveSports = () => {
       'betmgm': 'https://www.betmgm.com',
       'caesars': 'https://www.caesars.com/sportsbook',
       'betrivers': 'https://www.betrivers.com',
+      'circa': 'https://www.circasports.com',
       'espnbet': 'https://espnbet.com',
       'fanatics': 'https://fanatics.com/betting'
     };
@@ -983,7 +984,8 @@ const LiveSports = () => {
       'draftkings': 'https://www.draftkings.com',
       'fanduel': 'https://www.fanduel.com',
       'betmgm': 'https://www.betmgm.com',
-      'caesars': 'https://www.caesars.com/sportsbook'
+      'caesars': 'https://www.caesars.com/sportsbook',
+      'circa': 'https://www.circasports.com'
     };
     const sportsbooks = Object.keys(sportsbookUrls);
     const randomSportsbook = sportsbooks[Math.floor(Math.random() * sportsbooks.length)];

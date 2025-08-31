@@ -210,16 +210,16 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
         },
         pro: {
           name: 'Pro',
-          price: 29.99,
-          features: ['Unlimited parlay evaluations', 'Unlimited odds comparisons', 'Advanced AI analysis', 'Priority support'],
+          price: 9.99,
+          features: ['Unlimited parlay evaluations', 'Unlimited odds comparisons', 'Advanced AI analysis', 'Circa Sports integration', 'Priority support'],
           monthly_evaluations: 'unlimited',
           daily_evaluations: -1,
           daily_odds_comparisons: -1
         },
         premium: {
           name: 'Premium',
-          price: 59.99,
-          features: ['Everything in Pro', 'Advanced analytics', 'VIP support', 'Priority customer support'],
+          price: 19.99,
+          features: ['Everything in Pro', 'Advanced analytics', 'Email capture insights', 'VIP support', 'Early access to new features'],
           monthly_evaluations: 'unlimited',
           daily_evaluations: -1,
           daily_odds_comparisons: -1

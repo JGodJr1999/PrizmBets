@@ -27,6 +27,7 @@ const LogoText = styled.span`
       case 'betmgm': return '#f0b90b';
       case 'caesars': return '#caa53d';
       case 'betrivers': return '#1e3a8a';
+      case 'circa': return '#dc2626';
       default: return props.theme.colors.text.primary;
     }
   }};
@@ -51,6 +52,8 @@ const SportsbookLogo = ({ sportsbook, size = 'small' }) => {
         return { name: 'Caesars', emoji: '🏛️', color: '#caa53d' };
       case 'betrivers':
         return { name: 'BetRivers', emoji: '🌊', color: '#1e3a8a' };
+      case 'circa':
+        return { name: 'Circa Sports', emoji: '🎲', color: '#dc2626' };
       case 'pointsbet':
         return { name: 'PointsBet', emoji: '⚡', color: '#fbbf24' };
       case 'barstool':

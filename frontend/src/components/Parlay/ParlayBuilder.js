@@ -324,6 +324,7 @@ const ParlayBuilder = ({ onEvaluate, isLoading }) => {
     { value: 'betmgm', label: 'BetMGM' },
     { value: 'caesars', label: 'Caesars' },
     { value: 'betrivers', label: 'BetRivers' },
+    { value: 'circa', label: 'Circa Sports' },
     { value: 'espnbet', label: 'ESPN BET' },
     { value: 'fanatics', label: 'Fanatics Sportsbook' },
     { value: 'betway', label: 'Betway' },
