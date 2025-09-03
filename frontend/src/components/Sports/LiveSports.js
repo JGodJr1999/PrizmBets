@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
-import { Star, TrendingUp, Clock, ExternalLink, Calendar, PauseCircle, AlertCircle } from 'lucide-react';
+import { Star, TrendingUp, Clock, ExternalLink, Calendar, PauseCircle, AlertCircle, DollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LiveGameScoreCard from './LiveGameScoreCard';
 import EmptySportState from './EmptySportState';
+import SportTabs from './SportTabs';
+import SportCard from './SportCard';
+import { GameCardSkeleton, SportSelectorSkeleton, HeaderSkeleton } from '../UI/SkeletonLoader';
 
 const SportsContainer = styled.div`
   max-width: 1200px;
@@ -43,9 +46,10 @@ const Header = styled.div`
     right: 0;
     bottom: 0;
     background: linear-gradient(135deg, 
-      ${props => props.theme.colors.accent.primary}08 0%, 
+      ${props => props.theme.colors.accent.primary}15 0%, 
+      ${props => props.theme.colors.accent.primary}08 25%,
       transparent 50%,
-      ${props => props.theme.colors.accent.primary}08 100%
+      ${props => props.theme.colors.accent.secondary}10 100%
     );
     pointer-events: none;
   }
@@ -659,20 +663,22 @@ const SeasonSubtitle = styled.p`
 `;
 
 const sportsData = [
-  { key: 'all', name: 'All Sports', active: true },
-  { key: 'wnba', name: 'WNBA', active: true },
-  { key: 'nfl', name: 'NFL', active: true },
-  { key: 'nba', name: 'NBA', active: true },
-  { key: 'mlb', name: 'MLB', active: true },
-  { key: 'nhl', name: 'NHL', active: true },
-  { key: 'ncaaf', name: 'College Football', active: true },
-  { key: 'ncaab', name: 'College Basketball', active: true },
-  { key: 'soccer', name: 'Premier League', active: true },
-  { key: 'mma', name: 'MMA/UFC', active: true },
-  { key: 'tennis', name: 'Tennis', active: true },
-  { key: 'golf', name: 'Golf', active: true },
-  { key: 'nascar', name: 'NASCAR', active: true },
-  { key: 'f1', name: 'Formula 1', active: true }
+  { key: 'all', name: 'All Sports', active: true, category: 'special' },
+  // Active Sports (typically have live odds in current season)
+  { key: 'mlb', name: 'MLB', active: true, category: 'active' },
+  { key: 'nfl', name: 'NFL', active: true, category: 'active' },
+  { key: 'ncaaf', name: 'College Football', active: true, category: 'active' },
+  { key: 'wnba', name: 'WNBA', active: true, category: 'active' },
+  { key: 'mma', name: 'MMA/UFC', active: true, category: 'active' },
+  // Other Sports (may be seasonal or have limited API support)
+  { key: 'nba', name: 'NBA', active: true, category: 'other' },
+  { key: 'nhl', name: 'NHL', active: true, category: 'other' },
+  { key: 'ncaab', name: 'College Basketball', active: true, category: 'other' },
+  { key: 'soccer', name: 'Premier League', active: true, category: 'other' },
+  { key: 'tennis', name: 'Tennis', active: true, category: 'other' },
+  { key: 'golf', name: 'Golf', active: true, category: 'other' },
+  { key: 'nascar', name: 'NASCAR', active: true, category: 'other' },
+  { key: 'f1', name: 'Formula 1', active: true, category: 'other' }
 ];
 
 // Simple cache to store API responses for better performance
@@ -681,6 +687,7 @@ const CACHE_DURATION = 30000; // 30 seconds
 
 const LiveSports = () => {
   const [selectedSport, setSelectedSport] = useState('all');
+  const [activeTab, setActiveTab] = useState('active');
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -691,17 +698,81 @@ const LiveSports = () => {
   const [betAmounts, setBetAmounts] = useState({}); // For prop bets
   const [gameBetAmounts, setGameBetAmounts] = useState({}); // For regular game bets
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [sportsSeasonData, setSportsSeasonData] = useState(new Map());
 
-  // Memoize sports options to prevent unnecessary re-renders
-  const sportsOptions = useMemo(() => sportsData, []);
+  // Filter sports by category
+  const activeSports = useMemo(() => {
+    return sportsData.filter(sport => sport.category === 'active');
+  }, []);
+  
+  const otherSports = useMemo(() => {
+    return sportsData.filter(sport => sport.category === 'other');
+  }, []);
+  
+  const currentSports = useMemo(() => {
+    if (activeTab === 'active') return activeSports;
+    if (activeTab === 'other') return otherSports;
+    return [];
+  }, [activeTab, activeSports, otherSports]);
 
   // Memoize filtered games to improve performance
   const filteredGames = useMemo(() => {
     return games.filter(game => game && (game.teams || (game.home_team && game.away_team)));
   }, [games]);
 
+  // Function to fetch season data for a sport
+  const fetchSeasonData = useCallback(async (sportKey) => {
+    if (sportsSeasonData.has(sportKey)) {
+      return sportsSeasonData.get(sportKey);
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5001/api/odds/live/${sportKey}`);
+      const data = await response.json();
+      
+      const seasonInfo = {
+        seasonStatus: data.season_status,
+        seasonMessage: data.season_message,
+        nextSeasonStart: data.next_season_start,
+        hasLiveGames: data.success && data.games?.length > 0
+      };
+      
+      setSportsSeasonData(prev => new Map(prev).set(sportKey, seasonInfo));
+      return seasonInfo;
+    } catch (error) {
+      console.error(`Error fetching season data for ${sportKey}:`, error);
+      return {
+        seasonStatus: 'unknown',
+        seasonMessage: { description: 'Unable to load season information' },
+        nextSeasonStart: null,
+        hasLiveGames: false
+      };
+    }
+  }, [sportsSeasonData]);
+
+  // Handle sport card selection
+  const handleSportClick = useCallback((sportKey) => {
+    setSelectedSport(sportKey);
+    loadLiveOdds(sportKey);
+  }, []);
+
+  // Preload season data for all sports
+  useEffect(() => {
+    const preloadSeasonData = async () => {
+      const sportsToLoad = [...activeSports, ...otherSports];
+      for (const sport of sportsToLoad) {
+        if (sport.key !== 'all') {
+          await fetchSeasonData(sport.key);
+        }
+      }
+    };
+    
+    preloadSeasonData();
+  }, [activeSports, otherSports, fetchSeasonData]);
+
   const loadLiveOdds = useCallback(async (sport, retryCount = 0) => {
-    const maxRetries = 2;
+    const maxRetries = 3; // Increased retry count
+    const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
     
     setLoading(true);
     if (retryCount === 0) {
@@ -740,16 +811,27 @@ const LiveSports = () => {
           if (data.has_prop_bets && data.prop_bets) {
             setPropBets(data.prop_bets);
             setHasPropBets(true);
+          } else {
+            setHasPropBets(false);
           }
+        } else {
+          // Clear season status for active sports
+          setSeasonStatus(null);
+          setSeasonMessage(null);
+          setHasPropBets(false);
         }
         setLoading(false);
         return;
       }
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutDuration = retryCount === 0 ? 15000 : Math.min(8000 + (retryCount * 2000), 20000);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
       
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api${endpoint}`, {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 
+        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
+      
+      const response = await fetch(`${apiBaseUrl}/api${endpoint}`, {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
@@ -779,7 +861,8 @@ const LiveSports = () => {
           data_source: data.data_source,
           demo_mode: data.demo_mode,
           games_count: data.games?.length || 0,
-          success: data.success
+          success: data.success,
+          api_url: `${apiBaseUrl}/api${endpoint}`
         });
         
         if (data.demo_mode === true || data.data_source === 'mock' || data.data_source === 'demo') {
@@ -799,20 +882,38 @@ const LiveSports = () => {
           if (data.has_prop_bets && data.prop_bets) {
             setPropBets(data.prop_bets);
             setHasPropBets(true);
+          } else {
+            setHasPropBets(false);
           }
+        } else {
+          // Clear season status for active sports
+          setSeasonStatus(null);
+          setSeasonMessage(null);
+          setHasPropBets(false);
         }
       } else {
         throw new Error(data.error || 'Failed to load odds');
       }
     } catch (err) {
-      console.error(`Failed to load live odds (attempt ${retryCount + 1}):`, err);
+      const debugEndpoint = sport === 'all' 
+        ? `/odds/all-games?per_sport=3&upcoming=true` 
+        : `/odds/comparison/${sport}`;
+      const debugApiBaseUrl = process.env.REACT_APP_API_URL || 
+        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
+      console.error(`Failed to load live odds (attempt ${retryCount + 1}):`, {
+        error: err.message,
+        sport: sport,
+        endpoint: debugEndpoint,
+        api_url: `${debugApiBaseUrl}/api${debugEndpoint}`,
+        environment: process.env.NODE_ENV
+      });
       
-      // Retry logic
-      if (retryCount < maxRetries && (err.name === 'AbortError' || err.message.includes('fetch'))) {
-        console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
+      // Enhanced retry logic with exponential backoff
+      if (retryCount < maxRetries && (err.name === 'AbortError' || err.message.includes('fetch') || err.message.includes('NetworkError'))) {
+        console.log(`Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
         setTimeout(() => {
           loadLiveOdds(sport, retryCount + 1);
-        }, (retryCount + 1) * 2000); // Progressive delay
+        }, retryDelay);
         return;
       }
       
@@ -1002,10 +1103,13 @@ const LiveSports = () => {
   if (loading) {
     return (
       <SportsContainer>
-        <LoadingState>
-          <div>Loading live odds...</div>
-          <TrendingUp size={24} style={{ margin: '1rem auto', opacity: 0.5 }} />
-        </LoadingState>
+        <HeaderSkeleton />
+        <SportSelectorSkeleton />
+        <GamesList>
+          {Array.from({ length: 3 }, (_, i) => (
+            <GameCardSkeleton key={i} />
+          ))}
+        </GamesList>
       </SportsContainer>
     );
   }
@@ -1013,7 +1117,9 @@ const LiveSports = () => {
   return (
     <SportsContainer>
       <Header>
-        <Title>Live Sports Betting Odds</Title>
+        <Title>
+          Live Sports Odds
+        </Title>
         <Subtitle>Compare odds across 12+ sports and 6+ major sportsbooks - find the best value</Subtitle>
       </Header>
       
@@ -1033,24 +1139,70 @@ const LiveSports = () => {
         </DemoBanner>
       )}
 
-      <SportSelector>
-        {sportsOptions.map((sport) => (
-          <SportButton
-            key={sport.key}
-            active={selectedSport === sport.key}
-            onClick={() => setSelectedSport(sport.key)}
-            disabled={!sport.active}
-          >
-            {sport.name}
-          </SportButton>
-        ))}
-      </SportSelector>
+      <SportTabs 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeSportsCount={activeSports.length}
+        otherSportsCount={otherSports.length}
+      />
+      
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+        gap: '1rem', 
+        marginBottom: '2rem' 
+      }}>
+        {currentSports.map((sport) => {
+          const seasonData = sportsSeasonData.get(sport.key);
+          const isActiveSport = seasonData?.hasLiveGames || sport.category === 'active';
+          
+          return (
+            <SportCard
+              key={sport.key}
+              sport={sport}
+              isActive={isActiveSport}
+              seasonStatus={seasonData?.seasonStatus || 'loading'}
+              seasonMessage={seasonData?.seasonMessage}
+              nextSeasonStart={seasonData?.nextSeasonStart}
+              onClick={() => handleSportClick(sport.key)}
+              disabled={false}
+            />
+          );
+        })}
+      </div>
 
       {error && (
         <EmptyState>
           <h3>Unable to load odds</h3>
           <p>{error}</p>
-          <button onClick={() => loadLiveOdds(selectedSport)}>Try Again</button>
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button 
+              onClick={() => loadLiveOdds(selectedSport)}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                background: '#00d4aa', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                background: '#666', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Refresh Page
+            </button>
+          </div>
         </EmptyState>
       )}
 
@@ -1135,7 +1287,7 @@ const LiveSports = () => {
         </div>
       )}
 
-      {!loading && !error && seasonMessage && !hasPropBets && (
+      {!loading && !error && seasonMessage && !hasPropBets && games.length === 0 && (
         <SeasonStatusCard className={seasonStatus}>
           <SeasonStatusIcon>
             {seasonStatus === 'offseason' ? <PauseCircle size={48} /> : <Calendar size={48} />}

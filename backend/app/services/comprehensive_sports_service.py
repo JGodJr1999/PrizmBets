@@ -56,9 +56,9 @@ class ComprehensiveSportsService:
             'nfl': {
                 'key': 'americanfootball_nfl', 
                 'name': 'NFL',
-                'regular_season': {'start': (9, 5), 'end': (1, 15)},  # Sep 5 - Jan 15
+                'regular_season': {'start': (9, 1), 'end': (1, 15)},  # Sep 1 - Jan 15 (fixed for September)
                 'playoffs': {'start': (1, 15), 'end': (2, 15)},       # Jan 15 - Feb 15
-                'preseason': {'start': (8, 1), 'end': (9, 5)},        # Aug 1 - Sep 5
+                'preseason': {'start': (8, 1), 'end': (9, 1)},        # Aug 1 - Sep 1
                 'offseason': {'start': (2, 15), 'end': (8, 1)}        # Feb 15 - Aug 1
             },
             'nba': {
@@ -126,36 +126,36 @@ class ComprehensiveSportsService:
                 'offseason': {'start': (1, 1), 'end': (1, 1)}          # No offseason
             },
             'tennis': {
-                'key': 'tennis_atp', 
-                'name': 'Tennis ATP',
-                'regular_season': {'start': (1, 1), 'end': (11, 15)},  # Jan 1 - Nov 15
-                'playoffs': {'start': (11, 15), 'end': (11, 30)},      # Nov 15 - Nov 30 (ATP Finals)
-                'preseason': {'start': (12, 15), 'end': (1, 1)},       # Dec 15 - Jan 1
-                'offseason': {'start': (11, 30), 'end': (12, 15)}      # Nov 30 - Dec 15
+                'key': 'tennis_atp_wta',
+                'name': 'Tennis',
+                'regular_season': {'start': (1, 1), 'end': (11, 30)},  # Jan 1 - Nov 30
+                'playoffs': {'start': (11, 1), 'end': (11, 30)},       # ATP Finals
+                'preseason': {'start': (12, 15), 'end': (12, 31)},     # Off-season training
+                'offseason': {'start': (12, 1), 'end': (12, 31)}       # Dec 1 - Dec 31
             },
             'golf': {
-                'key': 'golf_pga', 
-                'name': 'PGA Golf',
+                'key': 'golf_pga_tour',
+                'name': 'Golf',
                 'regular_season': {'start': (1, 1), 'end': (12, 31)},  # Year-round
-                'playoffs': {'start': (8, 15), 'end': (9, 15)},        # Aug 15 - Sep 15 (FedEx Cup)
+                'playoffs': {'start': (8, 15), 'end': (9, 15)},        # FedEx Cup Playoffs
                 'preseason': {'start': (1, 1), 'end': (1, 1)},         # No traditional preseason
                 'offseason': {'start': (1, 1), 'end': (1, 1)}          # No traditional offseason
             },
             'nascar': {
-                'key': 'motorsport_nascar', 
+                'key': 'motorsport_nascar',
                 'name': 'NASCAR',
-                'regular_season': {'start': (2, 1), 'end': (9, 15)},   # Feb - Sep
-                'playoffs': {'start': (9, 15), 'end': (11, 15)},       # Sep - Nov
-                'preseason': {'start': (1, 1), 'end': (2, 1)},         # Jan - Feb
-                'offseason': {'start': (11, 15), 'end': (1, 1)}        # Nov - Jan
+                'regular_season': {'start': (2, 15), 'end': (11, 10)}, # Daytona 500 to Championship
+                'playoffs': {'start': (9, 1), 'end': (11, 10)},        # Playoff system
+                'preseason': {'start': (1, 15), 'end': (2, 15)},       # Testing/Daytona prep
+                'offseason': {'start': (11, 11), 'end': (1, 15)}       # Nov 11 - Jan 15
             },
             'f1': {
-                'key': 'motorsport_formula1', 
+                'key': 'motorsport_formula1',
                 'name': 'Formula 1',
-                'regular_season': {'start': (3, 1), 'end': (12, 1)},   # Mar - Dec
-                'playoffs': {'start': (1, 1), 'end': (1, 1)},          # No playoffs
-                'preseason': {'start': (1, 15), 'end': (3, 1)},        # Jan 15 - Mar
-                'offseason': {'start': (12, 1), 'end': (1, 15)}        # Dec - Jan 15
+                'regular_season': {'start': (3, 1), 'end': (11, 30)},  # March - November
+                'playoffs': {'start': (1, 1), 'end': (1, 1)},          # No playoffs, championship points
+                'preseason': {'start': (2, 15), 'end': (3, 1)},        # Testing
+                'offseason': {'start': (12, 1), 'end': (2, 15)}        # Dec 1 - Feb 15
             }
         }
 
@@ -431,14 +431,11 @@ class ComprehensiveSportsService:
         return standard_games
 
     def _get_current_season_status(self, sport_key: str, current_date: datetime = None) -> str:
-        """Automatically determine current season status based on date - temporarily defaulting to active for testing"""
+        """Automatically determine current season status based on date"""
         if current_date is None:
             current_date = datetime.utcnow()
         
-        # Temporarily default all sports to active for testing live data
-        # This will show games for all sports regardless of season
-        if self.use_live_api:
-            return 'active'
+        # Only return active for sports actually in season
             
         if sport_key not in self.sport_calendars:
             return 'active'  # Default to active for unknown sports
@@ -468,6 +465,31 @@ class ComprehensiveSportsService:
                     return 'active' if season_type in ['regular_season', 'playoffs'] else season_type
         
         return 'active'  # Default fallback
+
+    def _filter_current_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Filter out games that are too far in the future (futures betting)"""
+        current_time = datetime.utcnow()
+        max_future_time = current_time + timedelta(days=7)  # Only show games within 7 days
+        
+        filtered_games = []
+        for game in games:
+            try:
+                game_time_str = game.get('commence_time')
+                if game_time_str:
+                    game_time = datetime.fromisoformat(game_time_str.replace('Z', '+00:00')).replace(tzinfo=None)
+                    if game_time <= max_future_time:
+                        filtered_games.append(game)
+                    else:
+                        logger.debug(f"Filtered out future game: {game.get('away_team')} @ {game.get('home_team')} on {game_time_str}")
+                else:
+                    # If no time, include it
+                    filtered_games.append(game)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error parsing game time {game.get('commence_time')}: {e}")
+                # If we can't parse the time, include it to be safe
+                filtered_games.append(game)
+        
+        return filtered_games
 
     def _get_available_sports(self) -> Dict[str, Any]:
         """Generate sports list with current season status"""
@@ -507,8 +529,10 @@ class ComprehensiveSportsService:
             if live_data:
                 converted_games = self._convert_api_data_to_standard_format(live_data, sport_key)
                 if converted_games:
-                    logger.info(f"Using {len(converted_games)} live games for {sport_key}")
-                    return converted_games[:count]
+                    # Filter out games too far in the future (more than 7 days)
+                    filtered_games = self._filter_current_games(converted_games)
+                    logger.info(f"Using {len(filtered_games)} current/upcoming games for {sport_key} (filtered from {len(converted_games)})")
+                    return filtered_games[:count]
                 else:
                     logger.warning(f"No valid games from API data for {sport_key}")
             else:
@@ -688,6 +712,27 @@ class ComprehensiveSportsService:
                     'games': []
                 }
             
+            # Always get season status and sport info first
+            sport_info = self.sport_calendars[sport.lower()]
+            season_status = self._get_current_season_status(sport.lower())
+            season_message = self._get_season_message(sport_info['name'], season_status)
+            
+            # For sports without live API support, return season status info only
+            sports_without_api = ['tennis', 'golf', 'nascar', 'f1']
+            if sport.lower() in sports_without_api:
+                return {
+                    'success': True,
+                    'sport': sport_info['name'],
+                    'sport_key': sport.lower(),
+                    'games': [],
+                    'total_games': 0,
+                    'season_status': season_status,
+                    'season_message': season_message,
+                    'data_source': 'season_info_only',
+                    'last_updated': datetime.utcnow().isoformat(),
+                    'next_season_start': self._get_next_season_start(sport.lower()) if season_status != 'active' else None
+                }
+            
             # Get real-time season status
             season_status = self._get_current_season_status(sport.lower())
             sport_info = self.sport_calendars[sport.lower()]
@@ -834,3 +879,31 @@ class ComprehensiveSportsService:
             'description': 'We\'re updating our schedule information for this sport.',
             'action': 'Please check back shortly for the latest game information.'
         })
+
+    def _get_next_season_start(self, sport_key: str) -> Dict[str, Any]:
+        """Calculate when the next season starts for off-season sports"""
+        if sport_key not in self.sport_calendars:
+            return None
+            
+        calendar = self.sport_calendars[sport_key]
+        current_date = datetime.utcnow()
+        current_year = current_date.year
+        
+        # Get next regular season start
+        start_month, start_day = calendar['regular_season']['start']
+        
+        # Try this year first
+        next_season_start = datetime(current_year, start_month, start_day)
+        
+        # If the start date has already passed this year, try next year
+        if next_season_start <= current_date:
+            next_season_start = datetime(current_year + 1, start_month, start_day)
+        
+        # Calculate days until start
+        days_until = (next_season_start - current_date).days
+        
+        return {
+            'date': next_season_start.strftime('%B %d, %Y'),
+            'days_until': days_until,
+            'iso_date': next_season_start.isoformat()
+        }

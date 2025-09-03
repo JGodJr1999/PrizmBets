@@ -90,7 +90,21 @@
       "Bash(pyenv:*)",
       "Read(/Users/jgodjr/.pyenv/**)",
       "Read(/Users/jgodjr/.pyenv/versions/**)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_health --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud --version)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud config set project smartbets-5c06f)",
+      "WebFetch(domain:smartbets-5c06f.web.app)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_evaluate --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_live_scores --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_odds_comparison --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_all_games --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions add-iam-policy-binding api_keep_alive --region=us-central1 --member=\"allUsers\" --role=\"roles/cloudfunctions.invoker\")",
+      "Bash(for i in {2..5})",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(git fsck:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

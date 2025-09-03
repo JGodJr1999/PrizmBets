@@ -1,27 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
-
-// Firebase configuration
-// IMPORTANT: Replace these with your actual Firebase project credentials
-// You can get these from: https://console.firebase.google.com/
-// 1. Create a new project or select existing
-// 2. Go to Project Settings > General
-// 3. Scroll down to "Your apps" and click "Add app" > Web
-// 4. Copy the configuration below
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA-HDzYpHcsnWDFU2_OcgJL4Pbrfq2BwNQ",
-  authDomain: "prizmbets-5c06f.firebaseapp.com",
-  projectId: "prizmbets-5c06f",
-  storageBucket: "prizmbets-5c06f.firebasestorage.app",
+  authDomain: "smartbets-5c06f.firebaseapp.com",
+  projectId: "smartbets-5c06f",
+  storageBucket: "smartbets-5c06f.firebasestorage.app",
   messagingSenderId: "729118879083",
   appId: "1:729118879083:web:15d07f682b86098dc1f02e"
 };
@@ -33,6 +20,16 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 // export const analytics = getAnalytics(app);
+
+// Configure authentication providers
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+
+// Apple Sign-In provider
+export const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('email');
+appleProvider.addScope('name');
 
 // Export the app instance
 export default app;

@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { apiService } from '../services/api';
 import toast from 'react-hot-toast';
+import { auth } from '../config/firebase';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import analytics from '../utils/analytics';
 
 // Auth Context
 const AuthContext = createContext();
@@ -379,6 +382,96 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Firebase authentication for social login
+  const loginWithFirebase = async (socialUserData) => {
+    try {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+      // Create user in Flask backend with Firebase user data
+      const backendUserData = {
+        name: socialUserData.name || socialUserData.email.split('@')[0],
+        email: socialUserData.email,
+        firebase_uid: socialUserData.uid,
+        provider: socialUserData.provider,
+        terms_accepted: true,
+        marketing_emails: false
+      };
+
+      // Register user in Flask backend
+      const response = await apiService.registerFirebaseUser(backendUserData);
+      
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: {
+          user: response.user,
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token
+        }
+      });
+      
+      // Store tokens and user data
+      storeTokens(response.access_token, response.refresh_token, false);
+      storeUser(response.user, false);
+      
+      toast.success(`Welcome to PrizmBets, ${response.user.name}!`);
+      return { success: true };
+      
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Social login failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Firebase email/password registration
+  const registerWithFirebase = async (userData) => {
+    try {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        userData.email, 
+        userData.password
+      );
+      
+      // Prepare backend user data
+      const backendUserData = {
+        ...userData,
+        firebase_uid: userCredential.user.uid,
+        provider: 'email'
+      };
+
+      // Register user in Flask backend
+      const response = await apiService.registerFirebaseUser(backendUserData);
+      
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: {
+          user: response.user,
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token
+        }
+      });
+      
+      // Store tokens and user data
+      storeTokens(response.access_token, response.refresh_token, false);
+      storeUser(response.user, false);
+      
+      toast.success(`Welcome to PrizmBets, ${response.user.name}!`);
+      return { success: true };
+      
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Registration failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   // Clear error function
   const clearError = () => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
@@ -388,6 +481,8 @@ export const AuthProvider = ({ children }) => {
     ...state,
     login,
     register,
+    loginWithFirebase,
+    registerWithFirebase,
     logout,
     updateProfile,
     changePassword,

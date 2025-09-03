@@ -1,0 +1,47 @@
+# macOS metadata files
+._*
+.DS_Store
+**/.DS_Store
+**/._*
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Virtual environments
+venv/
+env/
+**/venv/
+**/env/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Testing
+.pytest_cache/
+.coverage
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+.backup
+
+# Git
+.git/
+.gitignore

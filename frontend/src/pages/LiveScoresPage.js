@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { Activity, Clock, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
 import LiveScoreCard from '../components/Sports/LiveScoreCard';
+import { LiveScoresLoadingSkeleton } from '../components/UI/SkeletonLoader';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -254,12 +255,35 @@ const LiveScoresPage = () => {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
-  const fetchLiveScores = useCallback(async () => {
+  const fetchLiveScores = useCallback(async (retryCount = 0) => {
+    const maxRetries = 2;
+    const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff
+    
     setLoading(true);
-    setError(null);
+    if (retryCount === 0) {
+      setError(null);
+    }
     
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/live-scores`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 
+        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
+      
+      const response = await fetch(`${apiBaseUrl}/api/live-scores`, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -267,12 +291,42 @@ const LiveScoresPage = () => {
         setStartingSoon(data.starting_soon || []);
         setRecentlyFinished(data.recently_finished || []);
         setLastUpdate(new Date());
+        
+        console.log('Live Scores API Response:', {
+          live_games_count: data.live_games?.length || 0,
+          starting_soon_count: data.starting_soon?.length || 0,
+          recently_finished_count: data.recently_finished?.length || 0,
+          success: data.success,
+          api_url: `${apiBaseUrl}/api/live-scores`
+        });
       } else {
         throw new Error(data.error || 'Failed to load live scores');
       }
     } catch (err) {
-      console.error('Failed to load live scores:', err);
-      setError(err.message);
+      console.error(`Failed to load live scores (attempt ${retryCount + 1}):`, {
+        error: err.message,
+        environment: process.env.NODE_ENV,
+        api_url: `${process.env.REACT_APP_API_URL || 
+          (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001')}/api/live-scores`
+      });
+      
+      // Retry logic
+      if (retryCount < maxRetries && (err.name === 'AbortError' || err.message.includes('fetch'))) {
+        console.log(`Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          fetchLiveScores(retryCount + 1);
+        }, retryDelay);
+        return;
+      }
+      
+      // Final error handling
+      const errorMessage = err.name === 'AbortError' 
+        ? 'Request timed out. Please check your connection and try again.'
+        : err.message.includes('Failed to fetch')
+        ? 'Unable to connect to server. Please check your connection and try again.'
+        : err.message;
+      
+      setError(errorMessage);
       setLiveGames([]);
       setStartingSoon([]);
       setRecentlyFinished([]);
@@ -326,17 +380,14 @@ const LiveScoresPage = () => {
               Unable to Load Scores
             </h3>
             <p>{error}</p>
-            <RefreshButton onClick={fetchLiveScores} disabled={loading}>
+            <RefreshButton onClick={() => fetchLiveScores()} disabled={loading}>
               Try Again
             </RefreshButton>
           </ErrorState>
         )}
 
         {loading && !liveGames.length && !startingSoon.length && !recentlyFinished.length && (
-          <LoadingState>
-            <div>Loading live scores...</div>
-            <Activity size={32} style={{ margin: '0 auto', opacity: 0.5, animation: 'pulse 2s infinite' }} />
-          </LoadingState>
+          <LiveScoresLoadingSkeleton />
         )}
 
         {!loading && !error && liveGames.length === 0 && startingSoon.length === 0 && recentlyFinished.length === 0 && (

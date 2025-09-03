@@ -54,10 +54,20 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
     MAIL_MAX_EMAILS = int(os.environ.get('MAIL_MAX_EMAILS', 50))  # Rate limiting
     MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() == 'true'
+    
+    # reCAPTCHA configuration
+    RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
+    RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
+    RECAPTCHA_ENABLED = os.environ.get('RECAPTCHA_ENABLED', 'true').lower() == 'true'
+    RECAPTCHA_THRESHOLD = float(os.environ.get('RECAPTCHA_THRESHOLD', '0.5'))
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///dev_prizmbets.db'
+    # Use relative path from project root for database
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    project_root = os.path.join(basedir, '..', '..', '..')
+    _db_path = os.path.join(project_root, 'backend', 'instance', 'dev_prizmbets.db')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{_db_path}'
     SESSION_COOKIE_SECURE = False  # Allow HTTP in development
     MAIL_SUPPRESS_SEND = True  # Don't send real emails in development
 
@@ -142,3 +152,8 @@ config = {
     'testing': TestingConfig,
     'default': DevelopmentConfig
 }
+
+def get_settings():
+    """Get current configuration settings"""
+    config_name = os.environ.get('FLASK_ENV', 'development')
+    return config.get(config_name, DevelopmentConfig)

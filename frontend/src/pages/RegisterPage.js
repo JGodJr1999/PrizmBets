@@ -4,8 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, User, Brain } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useRecaptcha } from '../contexts/RecaptchaContext';
 import { validateRegistrationForm, getPasswordStrength, getPasswordStrengthColor } from '../utils/authValidation';
 import { useTheme } from 'styled-components';
+import SocialAuthButtons from '../components/Auth/SocialAuthButtons';
+import ProfessionalSpinner from '../components/UI/ProfessionalSpinner';
+import ErrorAlert from '../components/UI/ErrorAlert';
 
 const RegisterContainer = styled.div`
   min-height: 100vh;
@@ -124,14 +128,19 @@ const RegisterButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: ${props => props.theme.spacing.md};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.sm};
+  min-height: 50px;
   
-  &:hover {
+  &:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: ${props => props.theme.shadows.glow};
   }
   
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.7;
     cursor: not-allowed;
     transform: none;
   }
@@ -206,7 +215,8 @@ const CheckboxLabel = styled.label`
 const RegisterPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, loginWithFirebase, isLoading, error, clearError } = useAuth();
+  const { executeRecaptchaAction } = useRecaptcha();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -256,6 +266,13 @@ const RegisterPage = () => {
       return;
     }
     
+    // Execute reCAPTCHA - skip for now to fix registration issues
+    // const recaptchaToken = await executeRecaptchaAction('register');
+    // if (!recaptchaToken) {
+    //   toast.error('Security verification failed. Please try again.');
+    //   return;
+    // }
+    
     // Prepare registration data
     const registrationData = {
       name: formData.name.trim(),
@@ -264,6 +281,7 @@ const RegisterPage = () => {
       confirm_password: formData.confirmPassword,
       terms_accepted: formData.termsAccepted,
       marketing_emails: formData.marketingEmails
+      // recaptcha_token: recaptchaToken
     };
     
     const result = await register(registrationData);
@@ -273,6 +291,18 @@ const RegisterPage = () => {
       navigate('/dashboard', { replace: true });
     }
     // Error handling is done in the AuthContext and shown via toast
+  };
+
+  const handleSocialAuth = async (userData) => {
+    try {
+      const result = await loginWithFirebase(userData);
+      if (result.success) {
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (error) {
+      console.error('Social auth error:', error);
+      toast.error('Failed to create account with social provider');
+    }
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
@@ -286,7 +316,10 @@ const RegisterPage = () => {
           PrizmBets
         </Logo>
         
-        <Title>Create Account</Title>
+        <Title>Join PrizmBets</Title>
+        
+        {/* Prominent social auth buttons for easier signup */}
+        <SocialAuthButtons onSuccess={handleSocialAuth} isLoading={isLoading} />
         
         <Form onSubmit={handleSubmit}>
           <InputGroup>
@@ -409,10 +442,28 @@ const RegisterPage = () => {
             </CheckboxLabel>
           </CheckboxGroup>
           
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {error && (
+            <ErrorAlert 
+              title="Registration Error"
+              message={error}
+              onDismiss={clearError}
+              showRetry={true}
+              onRetry={() => {
+                clearError();
+                handleSubmit({ preventDefault: () => {} });
+              }}
+            />
+          )}
           
           <RegisterButton type="submit" disabled={isLoading}>
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? (
+              <>
+                <ProfessionalSpinner size="small" showMessage={false} inline />
+                Creating your account...
+              </>
+            ) : (
+              'Create Account'
+            )}
           </RegisterButton>
         </Form>
         

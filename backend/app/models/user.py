@@ -14,14 +14,24 @@ class User(db.Model):
     # Primary fields
     id = Column(Integer, primary_key=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # Nullable for Firebase users
     name = Column(String(255), nullable=False)
+    
+    # Firebase integration
+    firebase_uid = Column(String(128), nullable=True, unique=True, index=True)
+    registration_method = Column(String(50), default='email', nullable=False)  # email, firebase_google, firebase_apple
+    is_email_verified = Column(Boolean, default=False, nullable=False)
     
     # Account status
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     subscription_tier = Column(String(50), default='free', nullable=False)  # free, pro, premium
     subscription_status = Column(String(50), default='active', nullable=False)  # active, canceled, past_due, incomplete
+    
+    # Account lockout (security)
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    account_locked_at = Column(DateTime, nullable=True)
+    account_locked_until = Column(DateTime, nullable=True)
     
     # Stripe integration
     stripe_customer_id = Column(String(255), nullable=True, unique=True)
@@ -50,11 +60,18 @@ class User(db.Model):
         Index('idx_user_created_at', 'created_at'),
     )
     
-    def __init__(self, email, password, name):
+    def __init__(self, email, name, password=None, firebase_uid=None, is_email_verified=False, registration_method='email'):
         self.email = email.lower().strip()
         self.name = name.strip()
-        self.set_password(password)
-        self.verification_token = str(uuid.uuid4())
+        self.firebase_uid = firebase_uid
+        self.is_email_verified = is_email_verified
+        self.registration_method = registration_method
+        
+        if password:
+            self.set_password(password)
+        
+        if not is_email_verified:
+            self.verification_token = str(uuid.uuid4())
     
     def set_password(self, password):
         """Hash and set password"""
@@ -65,9 +82,78 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
     
     def update_last_login(self):
-        """Update last login timestamp"""
+        """Update last login timestamp and reset failed attempts"""
         self.last_login_at = datetime.now(timezone.utc)
+        self.failed_login_attempts = 0
+        self.account_locked_at = None
+        self.account_locked_until = None
         db.session.commit()
+    
+    def increment_failed_login_attempts(self):
+        """Increment failed login attempts and lock account if threshold reached"""
+        from datetime import timedelta
+        
+        self.failed_login_attempts += 1
+        
+        # Lock account after 5 failed attempts
+        if self.failed_login_attempts >= 5:
+            now = datetime.now(timezone.utc)
+            self.account_locked_at = now
+            # Lock for progressively longer periods: 5 attempts = 15min, 10 attempts = 1hr, 15+ = 24hr
+            if self.failed_login_attempts >= 15:
+                lockout_duration = timedelta(hours=24)
+            elif self.failed_login_attempts >= 10:
+                lockout_duration = timedelta(hours=1)
+            else:
+                lockout_duration = timedelta(minutes=15)
+            
+            self.account_locked_until = now + lockout_duration
+        
+        db.session.commit()
+    
+    def is_account_locked(self):
+        """Check if account is currently locked"""
+        if not self.account_locked_until:
+            return False
+        
+        now = datetime.now(timezone.utc)
+        # Ensure both datetimes are timezone-aware
+        locked_until = self.account_locked_until
+        if locked_until.tzinfo is None:
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+        
+        if now >= locked_until:
+            # Lockout period has expired, unlock account
+            self.account_locked_at = None
+            self.account_locked_until = None
+            db.session.commit()
+            return False
+        
+        return True
+    
+    def get_lockout_info(self):
+        """Get information about account lockout"""
+        if not self.is_account_locked():
+            return None
+        
+        now = datetime.now(timezone.utc)
+        # Ensure datetime is timezone-aware
+        locked_until = self.account_locked_until
+        if locked_until.tzinfo is None:
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+            
+        locked_at = self.account_locked_at
+        if locked_at.tzinfo is None:
+            locked_at = locked_at.replace(tzinfo=timezone.utc)
+        
+        remaining = locked_until - now
+        
+        return {
+            'locked_at': locked_at.isoformat(),
+            'locked_until': locked_until.isoformat(),
+            'remaining_seconds': int(remaining.total_seconds()),
+            'failed_attempts': self.failed_login_attempts
+        }
     
     def to_dict(self, include_sensitive=False):
         """Convert user to dictionary for API responses"""

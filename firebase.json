@@ -34,6 +34,18 @@
         "function": "api_odds_comparison"
       },
       {
+        "source": "/api/odds/all-games",
+        "function": "api_all_games"
+      },
+      {
+        "source": "/api/live-scores",
+        "function": "api_live_scores"
+      },
+      {
+        "source": "/api/keep-alive",
+        "function": "api_keep_alive"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

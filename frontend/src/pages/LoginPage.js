@@ -4,7 +4,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, Brain } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useRecaptcha } from '../contexts/RecaptchaContext';
 import { validateLoginForm } from '../utils/authValidation';
+import SocialAuthButtons from '../components/Auth/SocialAuthButtons';
+import ProfessionalSpinner from '../components/UI/ProfessionalSpinner';
+import ErrorAlert from '../components/UI/ErrorAlert';
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -122,14 +126,19 @@ const LoginButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.sm};
+  min-height: 50px;
   
-  &:hover {
+  &:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: ${props => props.theme.shadows.glow};
   }
   
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.7;
     cursor: not-allowed;
     transform: none;
   }
@@ -186,7 +195,8 @@ const CheckboxLabel = styled.label`
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, registerWithFirebase, isLoading, error, clearError } = useAuth();
+  const { executeRecaptchaAction } = useRecaptcha();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -226,12 +236,33 @@ const LoginPage = () => {
     return Object.keys(validationErrors).length === 0;
   };
 
+  const handleSocialAuth = async (userData) => {
+    try {
+      // Register/login the user with Firebase data
+      const result = await registerWithFirebase(userData);
+      
+      if (result.success) {
+        navigate(from, { replace: true });
+      }
+    } catch (err) {
+      console.error('Social auth error:', err);
+      toast.error('Authentication failed. Please try again.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
+    
+    // Execute reCAPTCHA - skip for now to fix login issues
+    // const recaptchaToken = await executeRecaptchaAction('login');
+    // if (!recaptchaToken) {
+    //   toast.error('Security verification failed. Please try again.');
+    //   return;
+    // }
     
     const result = await login(formData.email, formData.password, formData.rememberMe);
     
@@ -251,6 +282,9 @@ const LoginPage = () => {
         </Logo>
         
         <Title>Welcome Back</Title>
+        
+        {/* Add social auth buttons for easier sign-in */}
+        <SocialAuthButtons onSuccess={handleSocialAuth} isLoading={isLoading} />
         
         <Form onSubmit={handleSubmit}>
           <InputGroup>
@@ -310,10 +344,28 @@ const LoginPage = () => {
             </CheckboxLabel>
           </CheckboxGroup>
           
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {error && (
+            <ErrorAlert 
+              title="Sign In Error"
+              message={error}
+              onDismiss={clearError}
+              showRetry={true}
+              onRetry={() => {
+                clearError();
+                handleSubmit({ preventDefault: () => {} });
+              }}
+            />
+          )}
           
           <LoginButton type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing In...' : 'Sign In'}
+            {isLoading ? (
+              <>
+                <ProfessionalSpinner size="small" showMessage={false} inline />
+                Signing you in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </LoginButton>
         </Form>
         

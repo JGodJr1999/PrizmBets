@@ -15,6 +15,7 @@ from app.utils.auth_validation import (
 from app.utils.jwt_utils import TokenManager, SecurityUtils
 from app.utils.auth_decorators import auth_required, verified_user_required, get_current_user
 from app.services.email_service import EmailService
+from app.services.recaptcha_service import recaptcha_service
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app import limiter
 import logging
@@ -56,6 +57,23 @@ def register():
                 'error': 'Invalid registration data',
                 'details': str(e)
             }), 400
+            
+        # Verify reCAPTCHA token
+        recaptcha_token = raw_data.get('recaptcha_token')
+        if recaptcha_token:
+            remote_ip = request.environ.get('REMOTE_ADDR', request.remote_addr)
+            recaptcha_result = recaptcha_service.verify_token(
+                token=recaptcha_token,
+                action='register',
+                remote_ip=remote_ip
+            )
+            
+            if not recaptcha_result['success']:
+                logger.warning(f"reCAPTCHA verification failed for registration: {recaptcha_result.get('error', 'Unknown error')}")
+                return jsonify({
+                    'error': 'Security verification failed',
+                    'message': 'Please try again'
+                }), 400
         
         # Check if user already exists
         existing_user = User.query.filter_by(email=validated_data['email']).first()
@@ -87,25 +105,25 @@ def register():
             
             logger.info(f"New user registered: {new_user.email} (ID: {new_user.id})")
             
-            # Send welcome email (non-blocking)
+            # Send email verification email (non-blocking)
             try:
                 from app import mail
                 email_service = EmailService(mail)
-                email_service.send_welcome_email(new_user)
-                logger.info(f"Welcome email queued for {new_user.email}")
+                email_service.send_verification_email(new_user)
+                logger.info(f"Verification email queued for {new_user.email}")
             except Exception as email_error:
-                logger.warning(f"Failed to send welcome email to {new_user.email}: {str(email_error)}")
+                logger.warning(f"Failed to send verification email to {new_user.email}: {str(email_error)}")
                 # Don't fail registration if email fails
             
             # Return success response (don't auto-login for security)
             return jsonify({
                 'success': True,
-                'message': 'Account created successfully',
+                'message': 'Account created successfully! Please check your email to verify your account.',
                 'user': {
                     'id': new_user.id,
                     'email': new_user.email,
                     'name': new_user.name,
-                    'is_verified': new_user.is_verified
+                    'is_verified': new_user.is_email_verified
                 },
                 'next_step': 'verify_email'
             }), 201
@@ -121,10 +139,127 @@ def register():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Registration error: {str(e)}")
+        logger.error(f"Registration error type: {type(e).__name__}")
+        # In development, return more detailed error info
+        import os
+        if os.environ.get('FLASK_ENV') == 'development':
+            return jsonify({
+                'error': 'Registration failed',
+                'message': str(e),
+                'debug': f"Error type: {type(e).__name__}"
+            }), 500
+        else:
+            return jsonify({
+                'error': 'Registration failed',
+                'message': 'Please try again later'
+            }), 500
+
+@auth_bp.route('/register/firebase', methods=['POST'])
+@limiter.limit("5 per minute")
+def register_firebase():
+    """
+    Register a new user from Firebase authentication
+    Expects JSON: {email, name, firebase_uid, provider, terms_accepted}
+    """
+    try:
+        # Validate request content type
+        if not request.is_json:
+            return jsonify({
+                'error': 'Content-Type must be application/json'
+            }), 400
+        
+        # Get and validate input data
+        raw_data = request.get_json()
+        if not raw_data:
+            return jsonify({
+                'error': 'Request body cannot be empty'
+            }), 400
+        
+        # Check for existing user by email or Firebase UID
+        existing_user = User.query.filter(
+            (User.email == raw_data.get('email')) | 
+            (User.firebase_uid == raw_data.get('firebase_uid'))
+        ).first()
+        
+        if existing_user:
+            # User exists, log them in
+            access_token, refresh_token, session_id = TokenManager.create_user_tokens(existing_user.id)
+            
+            if not access_token:
+                logger.error(f"Failed to create tokens for existing user {existing_user.id}")
+                return jsonify({
+                    'error': 'Login failed',
+                    'message': 'Unable to create session. Please try again.'
+                }), 500
+            
+            logger.info(f"Existing Firebase user logged in: {existing_user.email} (ID: {existing_user.id})")
+            
+            return jsonify({
+                'message': 'Login successful',
+                'user': existing_user.to_dict(),
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'session_id': session_id
+            }), 200
+        
+        # Create new user
+        user = User(
+            email=raw_data.get('email'),
+            name=raw_data.get('name'),
+            firebase_uid=raw_data.get('firebase_uid'),
+            is_email_verified=True,  # Firebase handles email verification
+            registration_method='firebase_' + raw_data.get('provider', 'unknown')
+        )
+        
+        db.session.add(user)
+        db.session.flush()  # Get user ID without committing
+        
+        # Create user profile
+        profile = UserProfile(
+            user_id=user.id,
+            marketing_emails=raw_data.get('marketing_emails', False)
+        )
+        
+        db.session.add(profile)
+        db.session.commit()
+        
+        # Generate JWT tokens
+        access_token, refresh_token, session_id = TokenManager.create_user_tokens(user.id)
+        
+        if not access_token:
+            logger.error(f"Failed to create tokens for user {user.id}")
+            return jsonify({
+                'error': 'Registration failed',
+                'message': 'Unable to create session. Please try again.'
+            }), 500
+        
+        logger.info(f"New Firebase user registered: {user.email} (ID: {user.id})")
+        
         return jsonify({
-            'error': 'Registration failed',
-            'message': 'Please try again later'
-        }), 500
+            'message': 'Registration successful',
+            'user': user.to_dict(),
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'session_id': session_id
+        }), 201
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Firebase registration error: {str(e)}")
+        logger.error(f"Firebase registration error type: {type(e).__name__}")
+        # In development, return more detailed error info
+        import os
+        if os.environ.get('FLASK_ENV') == 'development':
+            return jsonify({
+                'error': 'Registration failed',
+                'message': str(e),
+                'debug': f"Error type: {type(e).__name__}"
+            }), 500
+        else:
+            return jsonify({
+                'error': 'Registration failed',
+                'message': 'Please try again later'
+            }), 500
 
 @auth_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
@@ -156,15 +291,64 @@ def login():
                 'error': 'Invalid login data',
                 'details': str(e)
             }), 400
+            
+        # Verify reCAPTCHA token (if provided)
+        recaptcha_token = raw_data.get('recaptcha_token')
+        if recaptcha_token:
+            remote_ip = request.environ.get('REMOTE_ADDR', request.remote_addr)
+            recaptcha_result = recaptcha_service.verify_token(
+                token=recaptcha_token,
+                action='login',
+                remote_ip=remote_ip
+            )
+            
+            if not recaptcha_result['success']:
+                logger.warning(f"reCAPTCHA verification failed for login attempt: {recaptcha_result.get('error', 'Unknown error')}")
+                return jsonify({
+                    'error': 'Security verification failed',
+                    'message': 'Please try again'
+                }), 400
         
         # Find user by email
         user = User.query.filter_by(email=validated_data['email']).first()
         
-        if not user or not user.check_password(validated_data['password']):
-            logger.warning(f"Failed login attempt for email: {validated_data['email']}")
+        if not user:
+            logger.warning(f"Failed login attempt for non-existent email: {validated_data['email']}")
             return jsonify({
                 'error': 'Invalid credentials',
                 'message': 'Email or password is incorrect'
+            }), 401
+        
+        # Check if account is locked
+        if user.is_account_locked():
+            lockout_info = user.get_lockout_info()
+            logger.warning(f"Login attempt for locked account: {user.email}")
+            return jsonify({
+                'error': 'Account locked',
+                'message': f'Account is temporarily locked due to too many failed login attempts. Try again in {lockout_info["remaining_seconds"] // 60} minutes.',
+                'code': 'ACCOUNT_LOCKED',
+                'lockout_info': lockout_info
+            }), 423
+        
+        # Check password
+        if not user.check_password(validated_data['password']):
+            logger.warning(f"Failed login attempt for email: {validated_data['email']}")
+            user.increment_failed_login_attempts()
+            
+            # Check if account just got locked
+            if user.is_account_locked():
+                lockout_info = user.get_lockout_info()
+                return jsonify({
+                    'error': 'Account locked',
+                    'message': f'Too many failed login attempts. Account is locked for {lockout_info["remaining_seconds"] // 60} minutes.',
+                    'code': 'ACCOUNT_LOCKED_NOW',
+                    'lockout_info': lockout_info
+                }), 423
+            
+            return jsonify({
+                'error': 'Invalid credentials',
+                'message': 'Email or password is incorrect',
+                'remaining_attempts': max(0, 5 - user.failed_login_attempts)
             }), 401
         
         # Check if user account is active
@@ -174,6 +358,16 @@ def login():
                 'error': 'Account inactive',
                 'message': 'Your account has been deactivated. Please contact support.'
             }), 401
+        
+        # Check if email is verified (require verification for new accounts)
+        if not user.is_email_verified:
+            logger.warning(f"Login attempt for unverified user: {user.email}")
+            return jsonify({
+                'error': 'Email not verified',
+                'message': 'Please verify your email address before logging in. Check your inbox for a verification link.',
+                'code': 'EMAIL_NOT_VERIFIED',
+                'user_id': user.id
+            }), 403
         
         # Check for suspicious activity
         client_ip = TokenManager._get_client_ip()
@@ -610,6 +804,116 @@ def forbidden(error):
         'error': 'Forbidden',
         'message': 'Access denied'
     }), 403
+
+@auth_bp.route('/verify-email/<token>', methods=['GET'])
+def verify_email(token):
+    """
+    Verify user email with token
+    """
+    try:
+        # Decode the token to get user_id
+        user_id = TokenManager.verify_email_token(token)
+        
+        if not user_id:
+            return jsonify({
+                'error': 'Invalid verification link',
+                'message': 'The verification link is invalid or has expired.'
+            }), 400
+        
+        # Find and verify the user
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'message': 'User account not found.'
+            }), 404
+        
+        if user.is_email_verified:
+            return jsonify({
+                'success': True,
+                'message': 'Email already verified',
+                'already_verified': True
+            }), 200
+        
+        # Mark email as verified
+        user.is_email_verified = True
+        user.email_verified_at = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        logger.info(f"Email verified for user: {user.email}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Email verified successfully! You can now log in.'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Email verification error: {str(e)}")
+        return jsonify({
+            'error': 'Verification failed',
+            'message': 'Unable to verify email. Please try again or request a new verification link.'
+        }), 500
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+@limiter.limit("3 per hour")
+def resend_verification():
+    """
+    Resend email verification link
+    """
+    try:
+        if not request.is_json:
+            return jsonify({
+                'error': 'Content-Type must be application/json'
+            }), 400
+        
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({
+                'error': 'Email required',
+                'message': 'Please provide your email address'
+            }), 400
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            # Don't reveal if email exists or not
+            return jsonify({
+                'success': True,
+                'message': 'If an account exists with this email, a verification link has been sent.'
+            }), 200
+        
+        if user.is_email_verified:
+            return jsonify({
+                'error': 'Email already verified',
+                'message': 'Your email is already verified. You can log in now.'
+            }), 400
+        
+        # Send verification email
+        try:
+            from app import mail
+            email_service = EmailService(mail)
+            email_service.send_verification_email(user)
+            logger.info(f"Verification email resent to {user.email}")
+        except Exception as email_error:
+            logger.error(f"Failed to send verification email to {user.email}: {str(email_error)}")
+            return jsonify({
+                'error': 'Failed to send email',
+                'message': 'Unable to send verification email. Please try again later.'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': 'Verification email sent! Please check your inbox and spam folder.'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Resend verification error: {str(e)}")
+        return jsonify({
+            'error': 'Failed to resend verification',
+            'message': 'Please try again later'
+        }), 500
 
 @auth_bp.errorhandler(500)
 def internal_error(error):

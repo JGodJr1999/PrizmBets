@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Zap, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown, Activity, Target } from 'lucide-react';
+import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown, Activity, Target, DollarSign } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
 
 const HeaderContainer = styled.header`
@@ -386,16 +386,16 @@ const Header = ({ user = null, onLogout }) => {
             active={isActive('/live-sports')}
             onClick={() => handleNavigation('/live-sports')}
           >
-            <Zap size={16} />
-            Live Sports
+            <DollarSign size={16} />
+            Live Odds
           </NavItem>
           
           <NavItem 
             active={isActive('/live-scores')}
             onClick={() => handleNavigation('/live-scores')}
           >
-            <Activity size={16} />
-            Live Scores
+            <Trophy size={16} />
+            Live Sports
           </NavItem>
           
           <NavItem 
@@ -407,27 +407,11 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
           
           <NavItem 
-            active={isActive('/analytics')}
-            onClick={() => handleNavigation('/analytics')}
-          >
-            <TrendingUp size={16} />
-            Analytics
-          </NavItem>
-          
-          <NavItem 
-            active={isActive('/bet-tracking')}
-            onClick={() => handleNavigation('/bet-tracking')}
+            active={isActive('/betting-hub')}
+            onClick={() => handleNavigation('/betting-hub')}
           >
             <Target size={16} />
-            Bet Tracking
-          </NavItem>
-          
-          <NavItem 
-            active={isActive('/betting-data')}
-            onClick={() => handleNavigation('/betting-data')}
-          >
-            <Upload size={16} />
-            Upload Data
+            Betting Hub
           </NavItem>
           
           <NavItem 
@@ -485,11 +469,20 @@ const Header = ({ user = null, onLogout }) => {
           )}
           
           {user ? (
-            <UserColumnMenu 
-              user={user}
-              onNavigate={handleNavigation}
-              onLogout={onLogout}
-            />
+            <>
+              <NavItem 
+                active={isActive('/account')}
+                onClick={() => handleNavigation('/account')}
+              >
+                <User size={16} />
+                Account
+              </NavItem>
+              <UserColumnMenu 
+                user={user}
+                onNavigate={handleNavigation}
+                onLogout={onLogout}
+              />
+            </>
           ) : (
             <NavItem 
               active={isActive('/login')}

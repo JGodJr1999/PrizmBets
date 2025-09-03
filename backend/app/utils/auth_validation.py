@@ -13,47 +13,79 @@ class PasswordValidator:
     @staticmethod
     def validate_password_strength(password):
         """
-        Validate password meets security requirements
+        Validate password meets enhanced security requirements
         Requirements:
-        - At least 8 characters
+        - At least 12 characters (increased from 8)
         - Contains uppercase letter
         - Contains lowercase letter
         - Contains number
         - Contains special character
+        - No common patterns
+        - No repeated characters more than 3 times
         """
         if not isinstance(password, str):
             raise ValidationError("Password must be a string")
         
         errors = []
         
-        if len(password) < 8:
-            errors.append("Password must be at least 8 characters long")
+        # Minimum length requirement (increased for better security)
+        if len(password) < 12:
+            errors.append("Password must be at least 12 characters long")
+        
+        if len(password) > 128:
+            errors.append("Password cannot exceed 128 characters")
         
         if not re.search(r'[A-Z]', password):
-            errors.append("Password must contain at least one uppercase letter")
+            errors.append("Password must contain at least one uppercase letter (A-Z)")
         
         if not re.search(r'[a-z]', password):
-            errors.append("Password must contain at least one lowercase letter")
+            errors.append("Password must contain at least one lowercase letter (a-z)")
         
         if not re.search(r'\d', password):
-            errors.append("Password must contain at least one number")
+            errors.append("Password must contain at least one number (0-9)")
         
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            errors.append("Password must contain at least one special character")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\;\'\/~`]', password):
+            errors.append("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")
         
-        # Check for common weak passwords
-        weak_patterns = [
-            r'123456',
-            r'password',
-            r'qwerty',
-            r'admin',
-            r'letmein'
+        # Check for repeated characters (security enhancement)
+        for char in password:
+            if password.count(char) > 3:
+                errors.append("Password cannot contain the same character more than 3 times")
+                break
+        
+        # Check for sequential characters (keyboard patterns)
+        sequential_patterns = [
+            r'(012|123|234|345|456|567|678|789)',  # Sequential numbers
+            r'(qwe|ert|rty|tyu|yui|uio|iop)',      # QWERTY row 1
+            r'(asd|sdf|dfg|fgh|ghj|hjk|jkl)',      # QWERTY row 2  
+            r'(zxc|xcv|cvb|vbn|bnm)',              # QWERTY row 3
+            r'(abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)' # Alphabetical
         ]
         
-        for pattern in weak_patterns:
+        for pattern in sequential_patterns:
             if re.search(pattern, password.lower()):
-                errors.append("Password is too common and easily guessable")
+                errors.append("Password cannot contain sequential characters (e.g., 123, abc, qwerty)")
                 break
+        
+        # Enhanced common weak passwords check
+        weak_passwords = [
+            'password123', 'password1234', 'password12345',
+            'admin123', 'admin1234', 'administrator',
+            'welcome123', 'welcome1234', 'letmein123',
+            'prizmbets123', 'sports123', 'betting123',
+            '123456789', '1234567890', '12345678901',
+            'qwerty123', 'qwerty1234', 'asdfgh123',
+            'football123', 'basketball123', 'baseball123'
+        ]
+        
+        for weak in weak_passwords:
+            if password.lower() == weak or weak in password.lower():
+                errors.append("Password is too common. Please choose a more unique password.")
+                break
+        
+        # Check for repeated patterns
+        if re.search(r'(.{2,})\1{2,}', password):
+            errors.append("Password cannot contain repeated patterns")
         
         if errors:
             raise ValidationError(errors)
@@ -102,14 +134,14 @@ class UserRegistrationSchema(Schema):
     password = fields.Str(
         required=True,
         validate=[
-            validate.Length(min=8, max=128, error="Password must be between 8 and 128 characters"),
+            validate.Length(min=12, max=128, error="Password must be between 12 and 128 characters"),
             PasswordValidator.validate_password_strength
         ]
     )
     
     confirm_password = fields.Str(
         required=True,
-        validate=validate.Length(min=8, max=128, error="Confirm password must be between 8 and 128 characters")
+        validate=validate.Length(min=12, max=128, error="Confirm password must be between 12 and 128 characters")
     )
     
     name = fields.Str(
@@ -201,14 +233,14 @@ class PasswordResetSchema(Schema):
     password = fields.Str(
         required=True,
         validate=[
-            validate.Length(min=8, max=128, error="Password must be between 8 and 128 characters"),
+            validate.Length(min=12, max=128, error="Password must be between 12 and 128 characters"),
             PasswordValidator.validate_password_strength
         ]
     )
     
     confirm_password = fields.Str(
         required=True,
-        validate=validate.Length(min=8, max=128, error="Confirm password must be between 8 and 128 characters")
+        validate=validate.Length(min=12, max=128, error="Confirm password must be between 12 and 128 characters")
     )
     
     @validates_schema
@@ -293,14 +325,14 @@ class ChangePasswordSchema(Schema):
     new_password = fields.Str(
         required=True,
         validate=[
-            validate.Length(min=8, max=128, error="New password must be between 8 and 128 characters"),
+            validate.Length(min=12, max=128, error="New password must be between 12 and 128 characters"),
             PasswordValidator.validate_password_strength
         ]
     )
     
     confirm_new_password = fields.Str(
         required=True,
-        validate=validate.Length(min=8, max=128, error="Confirm new password must be between 8 and 128 characters")
+        validate=validate.Length(min=12, max=128, error="Confirm new password must be between 12 and 128 characters")
     )
     
     @validates_schema
