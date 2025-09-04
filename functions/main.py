@@ -29,24 +29,39 @@ set_global_options(
     memory=256  # Increase memory for better performance
 )
 
-# CORS Configuration
-ALLOWED_ORIGINS = [
+# CORS Configuration - Environment-aware
+PRODUCTION_ORIGINS = [
     'https://smartbets-5c06f.web.app',
     'https://smartbets-5c06f.firebaseapp.com',
     'https://prizmbets-5c06f.firebaseapp.com',
     'https://prizmbets.app',
-    'https://www.prizmbets.app',
+    'https://www.prizmbets.app'
+]
+
+DEVELOPMENT_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000'
 ]
 
-# API Configuration
-ODDS_API_KEY = os.getenv('ODDS_API_KEY', '10895df98265449efc15e58a68e4158b')
+# Only allow localhost in development environment
+FLASK_ENV = os.getenv('FLASK_ENV', 'production')
+ALLOWED_ORIGINS = PRODUCTION_ORIGINS + (DEVELOPMENT_ORIGINS if FLASK_ENV == 'development' else [])
+
+# API Configuration - Required environment variables
+ODDS_API_KEY = os.getenv('ODDS_API_KEY')
+if not ODDS_API_KEY:
+    raise ValueError("ODDS_API_KEY environment variable is required")
+
 ODDS_API_BASE_URL = os.getenv('ODDS_API_BASE_URL', 'https://api.the-odds-api.com/v4')
-APISPORTS_KEY = os.getenv('APISPORTS_KEY', '513982b126a3025cd4d1950d781539c2')
+
+APISPORTS_KEY = os.getenv('APISPORTS_KEY')
+if not APISPORTS_KEY:
+    raise ValueError("APISPORTS_KEY environment variable is required")
 
 # JWT Configuration for authentication
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', '0bcfa49a867109fedcab70b3b7d4441a077810163d9cdfb3f5b97c37f81612e0')
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+if not JWT_SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY environment variable is required")
 
 # API-Sports endpoints by sport
 APISPORTS_ENDPOINTS = {
@@ -152,11 +167,15 @@ def get_cors_headers(origin=None):
     
     return headers
 
-def handle_cors_preflight():
+def handle_cors_preflight(req):
     """Handle CORS preflight requests"""
-    origin = request.headers.get('Origin')
+    origin = req.headers.get('Origin')
     headers = get_cors_headers(origin)
-    return ('', 204, headers)
+    return https_fn.Response(
+        '',
+        status=204,
+        headers=headers
+    )
 
 def verify_jwt_token(req):
     """Verify JWT token from Authorization header"""
@@ -202,7 +221,7 @@ def verify_jwt_token(req):
 def api_health(req: https_fn.Request) -> https_fn.Response:
     """Health check endpoint"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     return https_fn.Response(
         json.dumps({
@@ -234,7 +253,7 @@ def api_health(req: https_fn.Request) -> https_fn.Response:
 def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
     """Get odds comparison for sports"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     # Check rate limiting
     allowed, rate_info = check_rate_limit(req, 50)  # Lower limit for odds comparison
@@ -391,7 +410,7 @@ def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
 def api_evaluate(req: https_fn.Request) -> https_fn.Response:
     """Evaluate parlay with AI analysis - REQUIRES AUTHENTICATION"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     if req.method != 'POST':
         return https_fn.Response(
@@ -668,7 +687,7 @@ def generate_demo_games(sport):
 def api_all_games(req: https_fn.Request) -> https_fn.Response:
     """Get all games from multiple sports"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     # Check rate limiting
     allowed, rate_info = check_rate_limit(req, 60)  # Moderate limit for all games
@@ -874,7 +893,7 @@ def api_all_games(req: https_fn.Request) -> https_fn.Response:
 def api_live_scores(req: https_fn.Request) -> https_fn.Response:
     """Get live sports scores and game updates"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     # Check rate limiting
     allowed, rate_info = check_rate_limit(req, 120)  # Higher limit for live scores (time-sensitive)
@@ -1101,7 +1120,7 @@ def api_live_scores(req: https_fn.Request) -> https_fn.Response:
 def api_keep_alive(req: https_fn.Request) -> https_fn.Response:
     """Keep the functions warm to prevent cold starts"""
     if req.method == 'OPTIONS':
-        return handle_cors_preflight()
+        return handle_cors_preflight(req)
     
     return https_fn.Response(
         json.dumps({

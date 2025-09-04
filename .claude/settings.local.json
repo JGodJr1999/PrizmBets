@@ -104,7 +104,15 @@
       "Bash(do)",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(git fsck:*)"
+      "Bash(git fsck:*)",
+      "Bash(DISABLE_ESLINT_PLUGIN=true npm run build)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions list --region=us-central1)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions list --regions=us-central1)",
+      "Bash(nvm list:*)",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud functions list --regions=us-central1 --project=smartbets-5c06f)",
+      "Bash(/Users/jgodjr/google-cloud-sdk/bin/gcloud auth list)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

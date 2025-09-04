@@ -275,7 +275,7 @@ export const apiService = {
   // Health check
   async healthCheck() {
     try {
-      const response = await api.get('/health');
+      const response = await api.get('/api_health');
       return response.data;
     } catch (error) {
       throw new Error('Health check failed');
@@ -294,7 +294,7 @@ export const apiService = {
         throw new Error('Invalid parlay data: total amount must be greater than 0');
       }
 
-      const response = await api.post('/evaluate', parlayData);
+      const response = await api.post('/api_evaluate', parlayData);
       return response.data;
     } catch (error) {
       if (error.response?.data?.error) {
@@ -320,6 +320,34 @@ export const apiService = {
     throw new Error('Parlay saving not yet implemented');
   },
 
+  // === SPORTS DATA ENDPOINTS ===
+
+  // Get live scores
+  async getLiveScores() {
+    try {
+      const response = await api.get('/api_live_scores');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get live scores');
+    }
+  },
+
+  // Get all games
+  async getAllGames(perSport = 3, upcoming = true) {
+    try {
+      const response = await api.get(`/api_all_games?per_sport=${perSport}&upcoming=${upcoming}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get all games');
+    }
+  },
+
   // === ODDS COMPARISON ENDPOINTS ===
 
   // Get best odds for a specific bet
@@ -329,7 +357,7 @@ export const apiService = {
         throw new Error('Invalid bet data: team and bet_type are required');
       }
 
-      const response = await api.post('/odds/best', betData);
+      const response = await api.post('/api_odds_comparison', betData);
       return response.data;
     } catch (error) {
       if (error.response?.data?.error) {
@@ -342,7 +370,7 @@ export const apiService = {
   // Get comprehensive odds comparison for a sport
   async getOddsComparison(sport, limit = 10) {
     try {
-      const response = await api.get(`/odds/comparison/${sport}?limit=${limit}`);
+      const response = await api.get(`/api_odds_comparison?sport=${sport}&limit=${limit}`);
       return response.data;
     } catch (error) {
       if (error.response?.data?.error) {

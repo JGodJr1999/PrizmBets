@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { Activity, Clock, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
 import LiveScoreCard from '../components/Sports/LiveScoreCard';
 import { LiveScoresLoadingSkeleton } from '../components/UI/SkeletonLoader';
+import { apiService } from '../services/api';
+import toast from 'react-hot-toast';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -265,26 +267,7 @@ const LiveScoresPage = () => {
     }
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const apiBaseUrl = process.env.REACT_APP_API_URL || 
-        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
-      
-      const response = await fetch(`${apiBaseUrl}/api/live-scores`, {
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      const data = await apiService.getLiveScores();
       
       if (data.success) {
         setLiveGames(data.live_games || []);
@@ -296,22 +279,24 @@ const LiveScoresPage = () => {
           live_games_count: data.live_games?.length || 0,
           starting_soon_count: data.starting_soon?.length || 0,
           recently_finished_count: data.recently_finished?.length || 0,
-          success: data.success,
-          api_url: `${apiBaseUrl}/api/live-scores`
+          success: data.success
         });
+        
+        // Show success toast only if we recovered from an error
+        if (error) {
+          toast.success('Live scores updated successfully');
+        }
       } else {
         throw new Error(data.error || 'Failed to load live scores');
       }
     } catch (err) {
       console.error(`Failed to load live scores (attempt ${retryCount + 1}):`, {
         error: err.message,
-        environment: process.env.NODE_ENV,
-        api_url: `${process.env.REACT_APP_API_URL || 
-          (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001')}/api/live-scores`
+        environment: process.env.NODE_ENV
       });
       
-      // Retry logic
-      if (retryCount < maxRetries && (err.name === 'AbortError' || err.message.includes('fetch'))) {
+      // Retry logic for network errors
+      if (retryCount < maxRetries && (err.message.includes('timeout') || err.message.includes('network') || err.message.includes('Failed to'))) {
         console.log(`Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
         setTimeout(() => {
           fetchLiveScores(retryCount + 1);
@@ -320,20 +305,18 @@ const LiveScoresPage = () => {
       }
       
       // Final error handling
-      const errorMessage = err.name === 'AbortError' 
-        ? 'Request timed out. Please check your connection and try again.'
-        : err.message.includes('Failed to fetch')
-        ? 'Unable to connect to server. Please check your connection and try again.'
-        : err.message;
-      
+      const errorMessage = err.message || 'Unable to load live scores. Please try again.';
       setError(errorMessage);
       setLiveGames([]);
       setStartingSoon([]);
       setRecentlyFinished([]);
+      
+      // Show error toast
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [error]);
 
   useEffect(() => {
     fetchLiveScores();

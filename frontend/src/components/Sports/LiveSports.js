@@ -7,6 +7,7 @@ import EmptySportState from './EmptySportState';
 import SportTabs from './SportTabs';
 import SportCard from './SportCard';
 import { GameCardSkeleton, SportSelectorSkeleton, HeaderSkeleton } from '../UI/SkeletonLoader';
+import { apiService } from '../../services/api';
 
 const SportsContainer = styled.div`
   max-width: 1200px;

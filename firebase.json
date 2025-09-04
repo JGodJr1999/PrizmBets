@@ -30,12 +30,28 @@
         "function": "api_evaluate"
       },
       {
-        "source": "/api/odds/comparison/**",
+        "source": "/api_evaluate",
+        "function": "api_evaluate"
+      },
+      {
+        "source": "/api_odds_comparison",
         "function": "api_odds_comparison"
+      },
+      {
+        "source": "/api_all_games",
+        "function": "api_all_games"
+      },
+      {
+        "source": "/api_live_scores",
+        "function": "api_live_scores"
       },
       {
         "source": "/api/odds/all-games",
         "function": "api_all_games"
+      },
+      {
+        "source": "/api/odds/comparison/**",
+        "function": "api_odds_comparison"
       },
       {
         "source": "/api/live-scores",
