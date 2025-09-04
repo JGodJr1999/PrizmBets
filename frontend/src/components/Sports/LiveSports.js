@@ -728,8 +728,7 @@ const LiveSports = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/odds/live/${sportKey}`);
-      const data = await response.json();
+      const data = await apiService.getLiveOddsBySport(sportKey);
       
       const seasonInfo = {
         seasonStatus: data.season_status,
@@ -785,15 +784,8 @@ const LiveSports = () => {
     setHasPropBets(false);
     
     try {
-      let endpoint;
-      if (sport === 'all') {
-        endpoint = `/odds/all-games?per_sport=3&upcoming=true`;
-      } else {
-        endpoint = `/odds/comparison/${sport}`;
-      }
-      
       // Check cache first
-      const cacheKey = `${sport}_${endpoint}`;
+      const cacheKey = `${sport}_${sport === 'all' ? 'all_games' : 'odds_comparison'}`;
       const cached = apiCache.get(cacheKey);
       const now = Date.now();
       
@@ -825,27 +817,13 @@ const LiveSports = () => {
         return;
       }
       
-      const controller = new AbortController();
-      const timeoutDuration = retryCount === 0 ? 15000 : Math.min(8000 + (retryCount * 2000), 20000);
-      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-      
-      const apiBaseUrl = process.env.REACT_APP_API_URL || 
-        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
-      
-      const response = await fetch(`${apiBaseUrl}/api${endpoint}`, {
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Use apiService for consistent API calls
+      let data;
+      if (sport === 'all') {
+        data = await apiService.getLiveOddsAll(3, true);
+      } else {
+        data = await apiService.getLiveOddsBySport(sport);
       }
-      
-      const data = await response.json();
       
       // Cache the response
       apiCache.set(cacheKey, {
@@ -863,7 +841,7 @@ const LiveSports = () => {
           demo_mode: data.demo_mode,
           games_count: data.games?.length || 0,
           success: data.success,
-          api_url: `${apiBaseUrl}/api${endpoint}`
+          method: sport === 'all' ? 'getLiveOddsAll' : 'getLiveOddsBySport'
         });
         
         if (data.demo_mode === true || data.data_source === 'mock' || data.data_source === 'demo') {
@@ -896,16 +874,11 @@ const LiveSports = () => {
         throw new Error(data.error || 'Failed to load odds');
       }
     } catch (err) {
-      const debugEndpoint = sport === 'all' 
-        ? `/odds/all-games?per_sport=3&upcoming=true` 
-        : `/odds/comparison/${sport}`;
-      const debugApiBaseUrl = process.env.REACT_APP_API_URL || 
-        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
+      const debugMethod = sport === 'all' ? 'getLiveOddsAll' : 'getLiveOddsBySport';
       console.error(`Failed to load live odds (attempt ${retryCount + 1}):`, {
         error: err.message,
         sport: sport,
-        endpoint: debugEndpoint,
-        api_url: `${debugApiBaseUrl}/api${debugEndpoint}`,
+        method: debugMethod,
         environment: process.env.NODE_ENV
       });
       
@@ -928,11 +901,8 @@ const LiveSports = () => {
       setError(errorMessage);
       
       // Try to use any cached data as fallback
-      const endpointForCache = sport === 'all' 
-        ? `/odds/all-games?per_sport=3&upcoming=true` 
-        : `/odds/comparison/${sport}`;
-      const cacheKey = `${sport}_${endpointForCache}`;
-      const fallbackCache = apiCache.get(cacheKey);
+      const fallbackCacheKey = `${sport}_${sport === 'all' ? 'all_games' : 'odds_comparison'}`;
+      const fallbackCache = apiCache.get(fallbackCacheKey);
       if (fallbackCache) {
         console.log('Using fallback cached data');
         setGames(fallbackCache.data.games || []);

@@ -348,6 +348,32 @@ export const apiService = {
     }
   },
 
+  // Get live odds for all sports
+  async getLiveOddsAll(perSport = 3, upcoming = true) {
+    try {
+      const response = await api.get(`/api_all_games?per_sport=${perSport}&upcoming=${upcoming}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get live odds for all sports');
+    }
+  },
+
+  // Get live odds for specific sport
+  async getLiveOddsBySport(sport) {
+    try {
+      const response = await api.get(`/api_odds_comparison?sport=${sport}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to get live odds for ${sport}`);
+    }
+  },
+
   // === ODDS COMPARISON ENDPOINTS ===
 
   // Get best odds for a specific bet
