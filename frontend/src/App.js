@@ -37,6 +37,7 @@ const BetTrackingPage = React.lazy(() => import('./components/BetTracking/BetTra
 const AccountPage = React.lazy(() => import('./pages/AccountPage'));
 const BettingHubPage = React.lazy(() => import('./pages/BettingHubPage'));
 const AffiliateDisclosurePage = React.lazy(() => import('./pages/AffiliateDisclosurePage'));
+const TestLiveData = React.lazy(() => import('./pages/TestLiveData'));
 
 // ProtectedRoute component to handle authentication-required pages
 const ProtectedRoute = ({ children }) => {
@@ -143,6 +144,10 @@ const AppContent = () => {
           <Route 
             path="/parlay" 
             element={<ParlayPage />}
+          />
+          <Route 
+            path="/test-live-data" 
+            element={<TestLiveData />}
           />
           <Route 
             path="/subscription" 

@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import LiveSports from '../components/Sports/LiveSports';
+import LiveSportsSimple from '../components/Sports/LiveSportsSimple';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -11,7 +11,7 @@ const PageContainer = styled.div`
 const LiveSportsPage = () => {
   return (
     <PageContainer>
-      <LiveSports />
+      <LiveSportsSimple />
     </PageContainer>
   );
 };
