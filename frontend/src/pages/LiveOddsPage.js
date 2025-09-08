@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import LiveSportsDisplay from '../components/LiveData/LiveSportsDisplay';
+import LiveOddsDisplay from '../components/LiveData/LiveOddsDisplay';
 import SportsErrorBoundary from '../components/Security/SportsErrorBoundary';
 
 const PageContainer = styled.div`
@@ -29,20 +29,20 @@ const Subtitle = styled.p`
   margin: 0 auto;
 `;
 
-const LiveScoresPage = () => {
+const LiveOddsPage = () => {
   return (
     <PageContainer>
       <Header>
-        <Title>Live Sports</Title>
+        <Title>Live Odds</Title>
         <Subtitle>
-          Follow live sports games, scores, and betting lines in real-time
+          Compare live betting odds across major sportsbooks for today's games
         </Subtitle>
       </Header>
-      <SportsErrorBoundary fallbackMessage="Unable to load live sports data. Please try refreshing the page or check back later.">
-        <LiveSportsDisplay />
+      <SportsErrorBoundary fallbackMessage="Unable to load live odds data. Please try refreshing the page or check back later.">
+        <LiveOddsDisplay />
       </SportsErrorBoundary>
     </PageContainer>
   );
 };
 
-export default LiveScoresPage;
+export default LiveOddsPage;
