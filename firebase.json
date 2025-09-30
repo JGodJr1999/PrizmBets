@@ -2,7 +2,7 @@
   "functions": [
     {
       "source": "functions",
-      "runtime": "python312",
+      "runtime": "python313",
       "codebase": "default",
       "ignore": [
         "node_modules",
@@ -22,43 +22,31 @@
     ],
     "rewrites": [
       {
-        "source": "/api/health",
+        "source": "/api_health",
         "function": "api_health"
-      },
-      {
-        "source": "/api/evaluate",
-        "function": "api_evaluate"
       },
       {
         "source": "/api_evaluate",
         "function": "api_evaluate"
       },
       {
-        "source": "/api_odds_comparison",
+        "source": "/api_all_games",
+        "function": "api_all_games"
+      },
+      {
+        "source": "/api_odds_comparison/**",
         "function": "api_odds_comparison"
       },
       {
-        "source": "/api_all_games",
-        "function": "api_all_games"
+        "source": "/api_odds_comparison",
+        "function": "api_odds_comparison"
       },
       {
         "source": "/api_live_scores",
         "function": "api_live_scores"
       },
       {
-        "source": "/api/odds/all-games",
-        "function": "api_all_games"
-      },
-      {
-        "source": "/api/odds/comparison/**",
-        "function": "api_odds_comparison"
-      },
-      {
-        "source": "/api/live-scores",
-        "function": "api_live_scores"
-      },
-      {
-        "source": "/api/keep-alive",
+        "source": "/api_keep_alive",
         "function": "api_keep_alive"
       },
       {
@@ -72,15 +60,39 @@
         "headers": [
           {
             "key": "Access-Control-Allow-Origin",
-            "value": "*"
+            "value": "https://smartbets-5c06f.web.app"
           },
           {
             "key": "Access-Control-Allow-Methods",
-            "value": "GET, POST, PUT, DELETE, OPTIONS"
+            "value": "GET, POST, OPTIONS"
           },
           {
             "key": "Access-Control-Allow-Headers",
-            "value": "Content-Type, Authorization"
+            "value": "Content-Type, Authorization, Accept, Cache-Control"
+          },
+          {
+            "key": "Access-Control-Max-Age",
+            "value": "3600"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-XSS-Protection",
+            "value": "1; mode=block"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000; includeSubDomains"
           }
         ]
       },

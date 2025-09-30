@@ -33,6 +33,12 @@ export const theme = {
       medium: '#FFA500',       // Orange for medium
       low: '#ff6b6b'
     },
+    status: {
+      error: '#ff6b6b',        // Red for errors
+      warning: '#FFA500',      // Orange for warnings
+      success: '#32CD32',      // Green for success
+      info: '#4ECDC4'          // Teal for info
+    },
     gradient: {
       primary: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
       card: 'linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%)',

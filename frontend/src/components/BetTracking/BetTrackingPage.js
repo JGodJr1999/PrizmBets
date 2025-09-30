@@ -184,7 +184,7 @@ const BetTrackingPage = () => {
   useEffect(() => {
     // Check if user has email tracking enabled
     checkEmailTrackingStatus();
-  }, [user]);
+  }, [user, checkEmailTrackingStatus]);
 
   const checkEmailTrackingStatus = async () => {
     if (!user) return;

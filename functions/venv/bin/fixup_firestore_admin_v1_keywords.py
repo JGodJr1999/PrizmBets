@@ -1,4 +1,4 @@
-#!/Volumes/JGodJr/PrizmBetsApp/functions/venv/bin/python3.12
+#!/Users/jgodjr/Documents/PrizmBetsApp/functions/venv/bin/python3.13
 # -*- coding: utf-8 -*-
 # Copyright 2025 Google LLC
 #

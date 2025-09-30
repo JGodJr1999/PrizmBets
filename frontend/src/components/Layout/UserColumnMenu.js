@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, 
-  LogOut, 
-  Settings, 
-  Upload, 
-  BarChart3, 
-  History, 
-  ChevronDown,
-  Bell
+import {
+  User,
+  LogOut,
+  Settings,
+  Upload,
+  BarChart3,
+  History,
+  ChevronDown
 } from 'lucide-react';
 
 const UserMenuContainer = styled.div`

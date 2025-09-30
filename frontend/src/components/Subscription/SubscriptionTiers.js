@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { Check, Crown, Zap, Star } from 'lucide-react';
 import { apiService } from '../../services/api';
 import toast from 'react-hot-toast';
+
+// Keyframe animations
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
 
 const TiersContainer = styled.div`
   max-width: 1200px;
@@ -93,6 +98,14 @@ const TierName = styled.h3`
   margin-bottom: ${props => props.theme.spacing.sm};
 `;
 
+const TierDescription = styled.p`
+  font-size: 0.9rem;
+  color: ${props => props.theme.colors.text.secondary};
+  text-align: center;
+  margin-bottom: ${props => props.theme.spacing.md};
+  line-height: 1.4;
+`;
+
 const TierPrice = styled.div`
   text-align: center;
   margin-bottom: ${props => props.theme.spacing.lg};
@@ -176,11 +189,7 @@ const LoadingSpinner = styled.div`
   border: 2px solid transparent;
   border-top: 2px solid currentColor;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  animation: ${spin} 1s linear infinite;
 `;
 
 const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
@@ -201,28 +210,84 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
       // Set default tiers if API fails
       setTiers({
         free: {
-          name: 'Free',
+          name: 'Starter',
           price: 0,
-          features: ['3 daily parlay evaluations', '10 daily odds comparisons', 'Basic AI analysis'],
-          monthly_evaluations: 90, // 3 per day * 30 days
+          description: 'Perfect for getting started with sports betting analysis',
+          features: [
+            '3 AI parlay evaluations per day',
+            '10 odds comparisons per day',
+            'Basic AI analysis',
+            'Track up to 50 bets',
+            'View 5 concurrent live games',
+            'Basic analytics (30 days)',
+            'Community support'
+          ],
           daily_evaluations: 3,
-          daily_odds_comparisons: 10
+          daily_odds_comparisons: 10,
+          max_bets: 50,
+          concurrent_games: 5,
+          analytics_days: 30
         },
         pro: {
           name: 'Pro',
-          price: 9.99,
-          features: ['Unlimited parlay evaluations', 'Unlimited odds comparisons', 'Advanced AI analysis', 'Circa Sports integration', 'Priority support'],
-          monthly_evaluations: 'unlimited',
-          daily_evaluations: -1,
-          daily_odds_comparisons: -1
+          price: 14.99,
+          annualPrice: 149.99,
+          description: 'Everything serious bettors need to gain an edge',
+          popular: true,
+          features: [
+            'Unlimited parlay evaluations',
+            'Unlimited odds comparisons',
+            'All 8+ sportsbooks',
+            'Automated email bet tracking',
+            'Unlimited bet tracking',
+            'Watch 30 concurrent live games',
+            'Advanced AI analysis',
+            'Lifetime analytics',
+            '10 custom alerts',
+            'Bankroll management tools',
+            'Weekly AI insights email',
+            'Priority email support (24-48hr)',
+            'Ad-free experience',
+            'Clean exports (no watermarks)'
+          ],
+          daily_evaluations: -1, // unlimited
+          daily_odds_comparisons: -1,
+          max_bets: -1,
+          concurrent_games: 30,
+          custom_alerts: 10,
+          analytics_days: -1
         },
-        premium: {
-          name: 'Premium',
-          price: 19.99,
-          features: ['Everything in Pro', 'Advanced analytics', 'Email capture insights', 'VIP support', 'Early access to new features'],
-          monthly_evaluations: 'unlimited',
+        elite: {
+          name: 'Elite',
+          price: 24.99,
+          annualPrice: 249.99,
+          description: 'For serious bettors who treat betting as a business',
+          features: [
+            'Everything in Pro',
+            'Daily AI +EV recommendations (3-5/day)',
+            'Real-time steam moves tracker',
+            'Prop betting edge finder',
+            'Line shopping optimizer',
+            'Hedge calculator',
+            'Betting journal with AI coach',
+            'Custom betting models & backtest',
+            'Multi-account tracking',
+            'Unlimited custom alerts',
+            'Sharp odds lines (Pinnacle/Circa)',
+            'VIP Discord channel',
+            'Priority live chat support (12hr)',
+            'Monthly strategy consultation call',
+            'Early access to new features'
+          ],
           daily_evaluations: -1,
-          daily_odds_comparisons: -1
+          daily_odds_comparisons: -1,
+          max_bets: -1,
+          concurrent_games: -1, // unlimited
+          custom_alerts: -1, // unlimited
+          analytics_days: -1,
+          ai_recommendations: true,
+          steam_moves: true,
+          vip_community: true
         }
       });
     } finally {
@@ -274,7 +339,7 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
         return <Star size={24} />;
       case 'pro':
         return <Zap size={24} />;
-      case 'premium':
+      case 'elite':
         return <Crown size={24} />;
       default:
         return <Star size={24} />;
@@ -287,7 +352,7 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
         return '#6B7280';
       case 'pro':
         return '#00D4AA';
-      case 'premium':
+      case 'elite':
         return '#F59E0B';
       default:
         return '#6B7280';
@@ -324,7 +389,7 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
       <Header>
         <Title>Choose Your Plan</Title>
         <Subtitle>
-          Unlock advanced features and maximize your betting potential with our subscription plans
+          Professional betting tools at an accessible price. Start free, upgrade anytime.
         </Subtitle>
       </Header>
 
@@ -343,14 +408,23 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
             </TierIcon>
             
             <TierName>{tier.name}</TierName>
-            
+
+            {tier.description && (
+              <TierDescription>{tier.description}</TierDescription>
+            )}
+
             <TierPrice>
               <Price>
                 ${tier.price}
                 <span>/month</span>
               </Price>
-              {tierKey !== 'free' && (
-                <PriceSubtext>Billed monthly, cancel anytime</PriceSubtext>
+              {tierKey !== 'free' && tier.annualPrice && (
+                <PriceSubtext>
+                  ${tier.annualPrice}/year (save ${((tier.price * 12) - tier.annualPrice).toFixed(2)})
+                </PriceSubtext>
+              )}
+              {tierKey === 'free' && (
+                <PriceSubtext>No credit card required</PriceSubtext>
               )}
             </TierPrice>
             

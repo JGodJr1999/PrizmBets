@@ -155,12 +155,19 @@ const PlanPrice = styled.div`
   font-size: 2.5rem;
   font-weight: 900;
   margin-bottom: ${props => props.theme.spacing.xs};
-  
+
   span {
     font-size: 1rem;
     color: ${props => props.theme.colors.text.secondary};
     font-weight: 500;
   }
+`;
+
+const AnnualSavings = styled.div`
+  font-size: 0.85rem;
+  color: ${props => props.theme.colors.accent.primary};
+  font-weight: 600;
+  margin-bottom: ${props => props.theme.spacing.sm};
 `;
 
 const FeatureList = styled.ul`
@@ -225,46 +232,61 @@ const SubscriptionSettings = ({ user }) => {
   const plans = [
     {
       id: 'free',
-      name: 'Free Plan',
+      name: 'Starter Plan',
       price: 0,
       period: 'forever',
       features: [
         '3 AI parlay evaluations per day',
-        '10 odds comparisons per day', 
-        '1 data upload per month',
-        'Basic analytics',
+        '10 odds comparisons per day',
+        'Track up to 50 bets',
+        'Basic analytics (30 days)',
+        'View 5 concurrent live games',
         'Community support'
       ]
     },
     {
       id: 'pro',
       name: 'Pro Plan',
-      price: 9.99,
+      price: 14.99,
       period: 'month',
+      annualPrice: 149.99,
       recommended: true,
       features: [
         'Unlimited AI parlay evaluations',
         'Unlimited odds comparisons',
-        'Unlimited data uploads',
-        'Advanced analytics & insights',
-        'Bet tracking & management',
-        'Priority support',
-        'Custom export formats'
+        'All 8+ sportsbooks',
+        'Automated email bet tracking',
+        'Unlimited bet tracking',
+        'Watch 30 concurrent live games',
+        'Advanced AI analysis',
+        'Lifetime analytics',
+        '10 custom alerts',
+        'Bankroll management tools',
+        'Priority email support (24-48hr)',
+        'Clean exports (no watermarks)'
       ]
     },
     {
-      id: 'premium',
-      name: 'Premium Plan',
-      price: 19.99,
+      id: 'elite',
+      name: 'Elite Plan',
+      price: 24.99,
       period: 'month',
+      annualPrice: 249.99,
       features: [
         'Everything in Pro',
-        'AI-powered betting recommendations',
-        'Advanced risk management',
-        'Custom betting strategies',
-        'API access',
-        '1-on-1 consultation',
-        'White-label options'
+        'Daily AI +EV recommendations (3-5/day)',
+        'Real-time steam moves tracker',
+        'Prop betting edge finder',
+        'Line shopping optimizer',
+        'Hedge calculator',
+        'Betting journal with AI coach',
+        'Custom betting models & backtest',
+        'Multi-account tracking',
+        'Unlimited custom alerts',
+        'Sharp odds lines (Pinnacle/Circa)',
+        'VIP Discord channel',
+        'Priority live chat support (12hr)',
+        'Monthly strategy consultation call'
       ]
     }
   ];
@@ -355,7 +377,13 @@ const SubscriptionSettings = ({ user }) => {
                 ${plan.price}
                 <span>/{plan.period}</span>
               </PlanPrice>
-              
+
+              {plan.annualPrice && (
+                <AnnualSavings>
+                  ${plan.annualPrice}/year (save ${((plan.price * 12) - plan.annualPrice).toFixed(2)})
+                </AnnualSavings>
+              )}
+
               <FeatureList>
                 {plan.features.map((feature, index) => (
                   <Feature key={index}>

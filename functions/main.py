@@ -15,12 +15,20 @@ import jwt
 from datetime import datetime, timedelta
 import pytz
 from dotenv import load_dotenv
+from marshmallow import Schema, fields, validate, ValidationError
 
 # Load environment variables
 load_dotenv()
 
-# Initialize Firebase Admin SDK
-initialize_app()
+# Firebase Admin SDK initialization (lazy-loaded)
+firebase_app = None
+
+def get_firebase_app():
+    """Get or initialize Firebase app"""
+    global firebase_app
+    if firebase_app is None:
+        firebase_app = initialize_app()
+    return firebase_app
 
 # Set global options for cost control and performance
 set_global_options(
@@ -49,19 +57,22 @@ ALLOWED_ORIGINS = PRODUCTION_ORIGINS + (DEVELOPMENT_ORIGINS if FLASK_ENV == 'dev
 
 # API Configuration - Required environment variables
 ODDS_API_KEY = os.getenv('ODDS_API_KEY')
-if not ODDS_API_KEY:
-    raise ValueError("ODDS_API_KEY environment variable is required")
-
 ODDS_API_BASE_URL = os.getenv('ODDS_API_BASE_URL', 'https://api.the-odds-api.com/v4')
-
-APISPORTS_KEY = os.getenv('APISPORTS_KEY')
-if not APISPORTS_KEY:
-    raise ValueError("APISPORTS_KEY environment variable is required")
+APISPORTS_KEY = os.getenv('APISPORTS_KEY', None)
 
 # JWT Configuration for authentication
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-if not JWT_SECRET_KEY:
-    raise ValueError("JWT_SECRET_KEY environment variable is required")
+JWT_ISSUER = os.getenv('JWT_ISSUER', 'prizmbets-api')
+JWT_AUDIENCE = os.getenv('JWT_AUDIENCE', 'prizmbets-app')
+
+# Validation function to be called when functions are invoked
+def validate_env_vars():
+    """Validate required environment variables at runtime"""
+    if not ODDS_API_KEY:
+        raise ValueError("ODDS_API_KEY environment variable is required")
+    if not JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY environment variable is required")
+    return True
 
 # API-Sports endpoints by sport
 APISPORTS_ENDPOINTS = {
@@ -77,10 +88,80 @@ CACHE_DURATION = 300000  # 5 minutes in milliseconds
 LIVE_CACHE_DURATION = 60000  # 1 minute for live data
 ODDS_CACHE_DURATION = 120000  # 2 minutes for odds data
 
+# Sport key mapping for frontend to API compatibility
+SPORT_KEY_MAPPING = {
+    'nfl': 'americanfootball_nfl',
+    'nba': 'basketball_nba', 
+    'mlb': 'baseball_mlb',
+    'nhl': 'icehockey_nhl',
+    'ncaaf': 'americanfootball_ncaaf',
+    'ncaab': 'basketball_ncaab',
+    'mma': 'mma_mixed_martial_arts',
+    'ufc': 'mma_mixed_martial_arts',
+    'soccer': 'soccer_epl',
+    'tennis': 'tennis_atp',
+    'golf': 'golf_pga_championship',
+    'f1': 'motorsport_f1',
+    'nascar': 'motorsport_nascar',
+    'wnba': 'basketball_wnba'
+}
+
 # Rate limiting storage
 rate_limit_storage = {}
 RATE_LIMIT_WINDOW = 60000  # 1 minute in milliseconds
 RATE_LIMIT_MAX_REQUESTS = 100  # requests per window
+
+# Input validation schemas
+class BetSchema(Schema):
+    team = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    bet_type = fields.Str(required=True, validate=validate.OneOf(['spread', 'moneyline', 'total', 'prop']))
+    odds = fields.Int(required=True, validate=validate.Range(min=-1000, max=1000))
+    line = fields.Float(allow_none=True, validate=validate.Range(min=-100, max=100))
+    
+class ParlaySchema(Schema):
+    bets = fields.List(fields.Nested(BetSchema), required=True, validate=validate.Length(min=1, max=12))
+    total_amount = fields.Float(required=True, validate=validate.Range(min=1, max=10000))
+    
+class SportFilterSchema(Schema):
+    sport = fields.Str(required=False, validate=validate.OneOf([
+        'nfl', 'nba', 'mlb', 'nhl', 'mma', 'ufc', 'soccer', 'tennis', 
+        'golf', 'ncaaf', 'ncaab', 'wnba', 'americanfootball_nfl',
+        'basketball_nba', 'baseball_mlb', 'icehockey_nhl', 'mma_mixed_martial_arts'
+    ]))
+    per_sport = fields.Int(required=False, validate=validate.Range(min=1, max=50))
+    upcoming = fields.Bool(required=False)
+
+def validate_request_data(schema_class, data):
+    """Validate request data using marshmallow schema"""
+    try:
+        schema = schema_class()
+        result = schema.load(data)
+        return result, None
+    except ValidationError as e:
+        return None, f"Validation error: {str(e.messages)}"
+    except Exception as e:
+        return None, f"Validation failed: {str(e)}"
+
+def sanitize_error_message(error_msg, is_production=True):
+    """Sanitize error messages for production to prevent information leakage"""
+    if not is_production:
+        return error_msg
+    
+    # Production error messages - generic and safe
+    if any(keyword in str(error_msg).lower() for keyword in [
+        'database', 'sql', 'connection', 'timeout', 'internal', 
+        'server', 'api key', 'secret', 'token', 'auth'
+    ]):
+        return "Service temporarily unavailable. Please try again later."
+    
+    if 'validation' in str(error_msg).lower():
+        return "Invalid request data. Please check your input."
+    
+    if 'rate limit' in str(error_msg).lower():
+        return "Too many requests. Please wait before trying again."
+    
+    # Default safe message
+    return "An error occurred. Please try again or contact support."
 
 def clean_expired_cache():
     """Clean expired cache entries to prevent memory bloat"""
@@ -92,52 +173,94 @@ def clean_expired_cache():
     for key in expired_keys:
         del api_cache[key]
 
-def check_rate_limit(req, max_requests=RATE_LIMIT_MAX_REQUESTS):
-    """Check if request exceeds rate limit"""
+def convert_bookmakers_to_sportsbooks(game_data):
+    """Convert bookmakers array format to sportsbooks object format"""
+    converted_game = {
+        'id': game_data.get('id'),
+        'sport': game_data.get('sport'),
+        'commence_time': game_data.get('commence_time'),
+        'home_team': game_data.get('home_team'),
+        'away_team': game_data.get('away_team'),
+        'status': 'scheduled',
+        'sportsbooks': {}
+    }
+    
+    # Convert bookmaker array to sportsbooks object
+    for bookmaker in game_data.get('bookmakers', []):
+        book_key = bookmaker.get('key')
+        if book_key in ['draftkings', 'fanduel', 'betmgm', 'caesars', 'betrivers']:
+            for market in bookmaker.get('markets', []):
+                if market.get('key') == 'h2h':
+                    outcomes = market.get('outcomes', [])
+                    moneyline = {}
+                    for outcome in outcomes:
+                        if outcome.get('name') == game_data.get('home_team'):
+                            moneyline['home'] = outcome.get('price')
+                        elif outcome.get('name') == game_data.get('away_team'):
+                            moneyline['away'] = outcome.get('price')
+                    
+                    if moneyline:
+                        converted_game['sportsbooks'][book_key] = {
+                            'moneyline': moneyline
+                        }
+    
+    return converted_game
+
+def check_rate_limit(req, max_requests=RATE_LIMIT_MAX_REQUESTS, user_id=None):
+    """Check if request exceeds rate limit with user-based and IP-based limits"""
     try:
-        # Get client IP (consider various proxy headers)
-        client_ip = (
-            req.headers.get('X-Forwarded-For', '').split(',')[0].strip() or
-            req.headers.get('X-Real-IP') or
-            req.headers.get('CF-Connecting-IP') or
-            'unknown'
-        )
-        
         current_time = int(time.time() * 1000)
         window_start = current_time - RATE_LIMIT_WINDOW
         
-        # Clean old entries
-        expired_ips = []
-        for ip, requests in rate_limit_storage.items():
-            rate_limit_storage[ip] = [
+        # Determine rate limit key (prefer user_id over IP)
+        if user_id:
+            limit_key = f"user:{user_id}"
+            # Authenticated users get higher limits
+            max_requests = min(max_requests * 2, 200)
+        else:
+            # Get client IP for unauthenticated requests
+            client_ip = (
+                req.headers.get('X-Forwarded-For', '').split(',')[0].strip() or
+                req.headers.get('X-Real-IP') or
+                req.headers.get('CF-Connecting-IP') or
+                'unknown'
+            )
+            limit_key = f"ip:{client_ip}"
+        
+        # Clean old entries for all stored keys
+        expired_keys = []
+        for key, requests in rate_limit_storage.items():
+            rate_limit_storage[key] = [
                 timestamp for timestamp in requests
                 if timestamp > window_start
             ]
-            if not rate_limit_storage[ip]:
-                expired_ips.append(ip)
+            if not rate_limit_storage[key]:
+                expired_keys.append(key)
         
-        for ip in expired_ips:
-            del rate_limit_storage[ip]
+        for key in expired_keys:
+            del rate_limit_storage[key]
         
-        # Check current IP's request count
-        if client_ip not in rate_limit_storage:
-            rate_limit_storage[client_ip] = []
+        # Check current key's request count
+        if limit_key not in rate_limit_storage:
+            rate_limit_storage[limit_key] = []
         
-        current_requests = len(rate_limit_storage[client_ip])
+        current_requests = len(rate_limit_storage[limit_key])
         
         if current_requests >= max_requests:
             return False, {
                 'error': 'Rate limit exceeded',
                 'message': f'Maximum {max_requests} requests per minute exceeded',
-                'retry_after': 60
+                'retry_after': 60,
+                'limit_type': 'user' if user_id else 'ip'
             }
         
         # Record this request
-        rate_limit_storage[client_ip].append(current_time)
+        rate_limit_storage[limit_key].append(current_time)
         
         return True, {
             'remaining': max_requests - current_requests - 1,
-            'reset_time': window_start + RATE_LIMIT_WINDOW
+            'reset_time': window_start + RATE_LIMIT_WINDOW,
+            'limit_type': 'user' if user_id else 'ip'
         }
         
     except Exception as e:
@@ -148,24 +271,52 @@ def get_cache_headers(cache_duration_seconds=300):
     """Get optimized cache headers for responses"""
     return {
         'Cache-Control': f'public, max-age={cache_duration_seconds}, stale-while-revalidate=60',
-        'Vary': 'Accept-Encoding, Origin',
         'ETag': str(hash(str(time.time() // cache_duration_seconds))),  # Simple ETag based on time window
     }
 
 def get_cors_headers(origin=None):
     """Get CORS headers for responses"""
     headers = {
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, Cache-Control',
         'Access-Control-Max-Age': '3600',
+        'Access-Control-Allow-Credentials': 'false',
+        'Vary': 'Accept-Encoding',
     }
     
+    # Properly handle origin
     if origin and origin in ALLOWED_ORIGINS:
         headers['Access-Control-Allow-Origin'] = origin
     else:
-        headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGINS[0]
+        # Always allow the main production domain
+        headers['Access-Control-Allow-Origin'] = 'https://smartbets-5c06f.web.app'
     
     return headers
+
+def get_security_headers():
+    """Get comprehensive security headers for all responses"""
+    return {
+        # Content Security Policy
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:; frame-ancestors 'none';",
+        # Prevent MIME type sniffing
+        'X-Content-Type-Options': 'nosniff',
+        # Prevent clickjacking
+        'X-Frame-Options': 'DENY',
+        # XSS Protection
+        'X-XSS-Protection': '1; mode=block',
+        # Referrer Policy
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        # HSTS (HTTP Strict Transport Security)
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+        # Prevent downloading of executable content
+        'X-Download-Options': 'noopen',
+        # Prevent caching of sensitive data
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        # Server identification
+        'Server': 'PrizmBets-API/2.0'
+    }
 
 def handle_cors_preflight(req):
     """Handle CORS preflight requests"""
@@ -178,7 +329,7 @@ def handle_cors_preflight(req):
     )
 
 def verify_jwt_token(req):
-    """Verify JWT token from Authorization header"""
+    """Verify JWT token from Authorization header with enhanced security"""
     try:
         auth_header = req.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
@@ -188,23 +339,51 @@ def verify_jwt_token(req):
         if not token:
             return None, 'Missing JWT token'
         
-        # Decode JWT token
-        decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
-        user_id = decoded.get('sub') or decoded.get('user_id')
+        # Decode JWT token with issuer and audience validation
+        decoded = jwt.decode(
+            token, 
+            JWT_SECRET_KEY, 
+            algorithms=['HS256'],
+            issuer=JWT_ISSUER,
+            audience=JWT_AUDIENCE,
+            options={
+                'verify_exp': True,
+                'verify_iat': True,
+                'verify_nbf': True,
+                'verify_iss': True,
+                'verify_aud': True,
+                'require_exp': True,
+                'require_iat': True
+            }
+        )
         
+        user_id = decoded.get('sub') or decoded.get('user_id')
         if not user_id:
             return None, 'Invalid token payload'
         
-        # Check token expiration
-        exp = decoded.get('exp')
-        if exp and datetime.utcfromtimestamp(exp) < datetime.utcnow():
-            return None, 'Token expired'
+        # Additional security checks
+        issued_at = decoded.get('iat')
+        if issued_at and issued_at > datetime.utcnow().timestamp():
+            return None, 'Token issued in the future'
+        
+        # Check if token is too old (max 24 hours)
+        if issued_at and (datetime.utcnow().timestamp() - issued_at) > 86400:
+            return None, 'Token expired - please login again'
         
         return user_id, None
         
     except jwt.ExpiredSignatureError:
         return None, 'Token expired'
-    except jwt.InvalidTokenError:
+    except jwt.InvalidIssuerError:
+        return None, 'Invalid token issuer'
+    except jwt.InvalidAudienceError:
+        return None, 'Invalid token audience'
+    except jwt.InvalidIssuedAtError:
+        return None, 'Invalid token issued at time'
+    except jwt.ImmatureSignatureError:
+        return None, 'Token not yet valid'
+    except jwt.InvalidTokenError as e:
+        print(f"Invalid JWT token: {str(e)}")
         return None, 'Invalid token'
     except Exception as e:
         print(f"JWT verification error: {str(e)}")
@@ -238,7 +417,8 @@ def api_health(req: https_fn.Request) -> https_fn.Response:
         status=200,
         headers={
             'Content-Type': 'application/json',
-            **get_cors_headers(req.headers.get('Origin'))
+            **get_cors_headers(req.headers.get('Origin')),
+            **get_security_headers()
         }
     )
 
@@ -248,6 +428,8 @@ def api_health(req: https_fn.Request) -> https_fn.Response:
         cors_origins=ALLOWED_ORIGINS,
         cors_methods=["get", "post", "options"]
     ),
+    memory=512,  # Increase memory for better performance
+    timeout_sec=60,  # Adequate timeout for API calls
     invoker="public"
 )
 def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
@@ -269,13 +451,27 @@ def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
         )
     
     try:
+        # Validate environment variables
+        validate_env_vars()
+
         # Extract sport from path
         path_parts = req.path.split('/')
         sport = 'americanfootball_nfl'  # Default sport
-        if 'comparison' in path_parts:
+        print(f"Request path: {req.path}, Path parts: {path_parts}, Origin: {req.headers.get('Origin')}")
+        
+        # Handle direct sport parameter (e.g. /api_odds_comparison/mma)
+        if len(path_parts) >= 2 and path_parts[-1] and path_parts[-1] != 'api_odds_comparison':
+            requested_sport = path_parts[-1]
+            # Map frontend sport key to API sport key
+            sport = SPORT_KEY_MAPPING.get(requested_sport, requested_sport)
+            print(f"Sport mapping: {requested_sport} -> {sport}")
+        elif 'comparison' in path_parts:
             sport_index = path_parts.index('comparison') + 1
             if sport_index < len(path_parts):
-                sport = path_parts[sport_index]
+                requested_sport = path_parts[sport_index]
+                # Map frontend sport key to API sport key
+                sport = SPORT_KEY_MAPPING.get(requested_sport, requested_sport)
+                print(f"Sport mapping: {requested_sport} -> {sport}")
         
         # Clean expired cache entries periodically
         if random.random() < 0.1:  # 10% chance to clean cache
@@ -317,25 +513,22 @@ def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
                 games = []
                 
                 for game in odds_data[:10]:  # Limit to 10 games
-                    game_data = {
+                    # Keep the raw API format temporarily for conversion
+                    raw_game = {
                         'id': game.get('id'),
                         'sport': sport,
                         'commence_time': game.get('commence_time'),
                         'home_team': game.get('home_team'),
                         'away_team': game.get('away_team'),
-                        'bookmakers': []
+                        'bookmakers': game.get('bookmakers', [])[:5]  # Limit to 5 bookmakers
                     }
                     
-                    # Process bookmakers
-                    for bookmaker in game.get('bookmakers', [])[:3]:  # Limit to 3 bookmakers
-                        bm_data = {
-                            'key': bookmaker.get('key'),
-                            'title': bookmaker.get('title'),
-                            'markets': bookmaker.get('markets', [])
-                        }
-                        game_data['bookmakers'].append(bm_data)
+                    # Convert to frontend-expected format
+                    converted_game = convert_bookmakers_to_sportsbooks(raw_game)
                     
-                    games.append(game_data)
+                    # Only include games with odds data
+                    if converted_game['sportsbooks']:
+                        games.append(converted_game)
                 
                 result = {
                     'success': True,
@@ -366,13 +559,20 @@ def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
             print(f"Odds API error: {api_error}")
         
         # Fallback to demo data if API fails
-        demo_games = generate_demo_games(sport)
+        raw_demo_games = generate_demo_games(sport)
+        converted_demo_games = []
+        
+        for game in raw_demo_games[:10]:  # Limit to 10 games
+            converted_game = convert_bookmakers_to_sportsbooks(game)
+            if converted_game['sportsbooks']:  # Only include games with odds
+                converted_demo_games.append(converted_game)
+        
         result = {
             'success': True,
-            'games': demo_games,
+            'games': converted_demo_games,
             'data_source': 'demo',
             'demo_mode': True,
-            'count': len(demo_games),
+            'count': len(converted_demo_games),
             'message': 'Using demo data - API unavailable'
         }
         
@@ -386,16 +586,18 @@ def api_odds_comparison(req: https_fn.Request) -> https_fn.Response:
         )
         
     except Exception as e:
+        error_message = sanitize_error_message(str(e))
         return https_fn.Response(
             json.dumps({
                 'success': False,
-                'error': str(e),
+                'error': error_message,
                 'message': 'Failed to fetch odds comparison'
             }),
             status=500,
             headers={
                 'Content-Type': 'application/json',
-                **get_cors_headers(req.headers.get('Origin'))
+                **get_cors_headers(req.headers.get('Origin')),
+                **get_security_headers()
             }
         )
 
@@ -428,21 +630,42 @@ def api_evaluate(req: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(
             json.dumps({
                 'error': 'Authentication required',
-                'message': auth_error,
+                'message': sanitize_error_message(auth_error),
                 'code': 'AUTH_REQUIRED'
             }),
             status=401,
             headers={
                 'Content-Type': 'application/json',
-                **get_cors_headers(req.headers.get('Origin'))
+                **get_cors_headers(req.headers.get('Origin')),
+                **get_security_headers()
+            }
+        )
+    
+    # Check rate limiting with user-based limits
+    allowed, rate_info = check_rate_limit(req, 30, user_id)  # Lower limit for parlay evaluations
+    if not allowed:
+        return https_fn.Response(
+            json.dumps({
+                **rate_info,
+                'message': sanitize_error_message(rate_info.get('message', 'Rate limit exceeded'))
+            }),
+            status=429,
+            headers={
+                'Content-Type': 'application/json',
+                'Retry-After': str(rate_info.get('retry_after', 60)),
+                **get_cors_headers(req.headers.get('Origin')),
+                **get_security_headers()
             }
         )
     
     try:
+        # Validate environment variables
+        validate_env_vars()
+
         data = req.get_json()
         if not data:
             return https_fn.Response(
-                json.dumps({'error': 'No data provided'}),
+                json.dumps({'error': sanitize_error_message('No data provided')}),
                 status=400,
                 headers={
                     'Content-Type': 'application/json',
@@ -450,17 +673,19 @@ def api_evaluate(req: https_fn.Request) -> https_fn.Response:
                 }
             )
         
-        # Validate parlay data
-        bets = data.get('bets', [])
-        if not bets:
+        # Validate parlay data using marshmallow schema
+        validated_data, validation_error = validate_request_data(ParlaySchema, data)
+        if validation_error:
             return https_fn.Response(
-                json.dumps({'error': 'No bets provided'}),
+                json.dumps({'error': sanitize_error_message(validation_error)}),
                 status=400,
                 headers={
                     'Content-Type': 'application/json',
                     **get_cors_headers(req.headers.get('Origin'))
                 }
             )
+        
+        bets = validated_data['bets']
         
         # AI Evaluation Logic (simplified)
         total_score = 0
@@ -544,22 +769,28 @@ def api_evaluate(req: https_fn.Request) -> https_fn.Response:
         )
         
     except Exception as e:
+        error_message = sanitize_error_message(str(e))
         return https_fn.Response(
             json.dumps({
                 'success': False,
-                'error': str(e),
+                'error': error_message,
                 'message': 'Failed to evaluate parlay'
             }),
             status=500,
             headers={
                 'Content-Type': 'application/json',
-                **get_cors_headers(req.headers.get('Origin'))
+                **get_cors_headers(req.headers.get('Origin')),
+                **get_security_headers()
             }
         )
 
 def get_live_scores_from_apisports(sport_key):
     """Get live scores from API-Sports for enhanced data"""
     try:
+        # Safety check: skip if no API key available
+        if not APISPORTS_KEY:
+            return None
+            
         if sport_key not in APISPORTS_ENDPOINTS:
             return None
             
@@ -945,8 +1176,8 @@ def api_live_scores(req: https_fn.Request) -> https_fn.Response:
         ]
         
         current_utc_time = datetime.now(pytz.UTC)
-        four_hours_ago = current_utc_time - timedelta(hours=4)
-        four_hours_from_now = current_utc_time + timedelta(hours=4)
+        eight_hours_ago = current_utc_time - timedelta(hours=8)
+        eight_hours_from_now = current_utc_time + timedelta(hours=8)
         
         for sport in sports_for_live_data:
             try:
@@ -1009,7 +1240,7 @@ def api_live_scores(req: https_fn.Request) -> https_fn.Response:
                                         # Categorize based on status
                                         if status in ['live', 'in progress', 'playing', '1st quarter', '2nd quarter', '3rd quarter', '4th quarter', 'halftime']:
                                             live_games.append(base_game)
-                                        elif status in ['finished', 'ended', 'final'] and game_time > four_hours_ago:
+                                        elif status in ['finished', 'ended', 'final'] and game_time > eight_hours_ago:
                                             recently_finished.append(base_game)
                                         break
                                 except Exception as match_error:
@@ -1018,7 +1249,7 @@ def api_live_scores(req: https_fn.Request) -> https_fn.Response:
                         
                         # If no live match found, check if starting soon
                         if 'live_data' not in base_game:
-                            if four_hours_ago <= game_time <= four_hours_from_now:
+                            if eight_hours_ago <= game_time <= eight_hours_from_now:
                                 base_game['countdown'] = max(0, int((game_time - current_utc_time).total_seconds()))
                                 starting_soon.append(base_game)
                                 
@@ -1081,31 +1312,57 @@ def api_live_scores(req: https_fn.Request) -> https_fn.Response:
             'ttl': LIVE_CACHE_DURATION
         }
         
+        response_body = json.dumps(result)
+        
         return https_fn.Response(
-            json.dumps(result),
+            response_body,
             status=200,
             headers={
                 'Content-Type': 'application/json',
+                'Content-Encoding': 'gzip',
                 **get_cors_headers(req.headers.get('Origin')),
                 **get_cache_headers(LIVE_CACHE_DURATION // 1000)
             }
         )
         
     except Exception as e:
-        print(f"Live scores error: {str(e)}")
+        error_details = {
+            'error_type': type(e).__name__,
+            'error_message': str(e),
+            'timestamp': datetime.now().isoformat(),
+            'endpoint': 'api_live_scores'
+        }
+        
+        print(f"Live scores error: {error_details}")
+        
+        # Provide specific error messages based on error type
+        if 'timeout' in str(e).lower():
+            user_message = 'Request timed out while fetching live scores. The sports data service may be experiencing high load.'
+        elif 'network' in str(e).lower() or 'connection' in str(e).lower():
+            user_message = 'Network error while fetching live scores. Please check your connection and try again.'
+        elif 'api key' in str(e).lower() or 'unauthorized' in str(e).lower():
+            user_message = 'Sports data service authentication error. Please contact support.'
+        elif 'rate limit' in str(e).lower():
+            user_message = 'API rate limit exceeded. Please wait a moment and try again.'
+        else:
+            user_message = f'Unable to load live scores: {str(e)}'
+        
         return https_fn.Response(
             json.dumps({
                 'success': False,
-                'error': str(e),
+                'error': sanitize_error_message(str(e)),
+                'user_message': sanitize_error_message(user_message),
                 'live_games': [],
                 'starting_soon': [],
                 'recently_finished': [],
-                'message': 'Failed to fetch live scores'
+                'retry_suggested': True,
+                'retry_delay_seconds': 30
             }),
             status=500,
             headers={
                 'Content-Type': 'application/json',
-                **get_cors_headers(req.headers.get('Origin'))
+                **get_cors_headers(req.headers.get('Origin')),
+                **get_security_headers()
             }
         )
 
@@ -1137,44 +1394,23 @@ def api_keep_alive(req: https_fn.Request) -> https_fn.Response:
     )
 
 # Scheduled function to keep functions warm (if using Firebase Scheduler)
-from firebase_functions import scheduler_fn
+try:
+    from firebase_functions import scheduler_fn
 
-@scheduler_fn.on_schedule(
-    schedule="every 5 minutes",
-    timezone="America/New_York"
-)
-def keep_warm_scheduled(event):
-    """Scheduled function to keep functions warm"""
-    try:
-        # Ping our own endpoints to keep them warm
-        keep_alive_endpoints = [
-            '/api/health',
-            '/api/odds/comparison/americanfootball_nfl',
-            '/api/live-scores'
-        ]
-        
-        base_url = 'https://us-central1-smartbets-5c06f.cloudfunctions.net'
-        
-        import concurrent.futures
-        
-        def ping_endpoint(endpoint):
-            try:
-                import urllib.request
-                url = f"{base_url}{endpoint}"
-                req = urllib.request.Request(url, headers={'User-Agent': 'keep-warm-scheduler'})
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    return f"Pinged {endpoint}: {response.status}"
-            except Exception as e:
-                return f"Failed to ping {endpoint}: {str(e)}"
-        
-        # Ping endpoints concurrently
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            results = list(executor.map(ping_endpoint, keep_alive_endpoints))
-        
-        print(f"Keep-warm results: {results}")
-        
-    except Exception as e:
-        print(f"Keep-warm failed: {str(e)}")
+    @scheduler_fn.on_schedule(
+        schedule="every 5 minutes",
+        timezone="America/New_York"
+    )
+    def keep_warm_scheduled(event):
+        """Scheduled function to keep functions warm"""
+        try:
+            print("Keep-warm scheduler triggered")
+            return "OK"
+        except Exception as e:
+            print(f"Keep-warm failed: {str(e)}")
+            return "ERROR"
+except ImportError:
+    print("Scheduler functions not available")
 
 # Export the functions
 # Note: Firebase Functions for Python automatically detects functions with the @https_fn.on_request decorator

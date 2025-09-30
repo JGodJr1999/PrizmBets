@@ -269,7 +269,7 @@ const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
 
   useEffect(() => {
     fetchOdds();
-  }, [team, betType, sport]);
+  }, [team, betType, sport, fetchOdds]);
 
   const handleBetClick = (sportsbook) => {
     // Safe sportsbook homepage links - no affiliate tracking

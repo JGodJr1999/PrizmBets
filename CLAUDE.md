@@ -6,7 +6,7 @@ Claude.MD rules:
 
 Standard Workflow
 1. First think through the problem, read the codebase for relevant files, and write a plan to todo.md.
-2. The plan should have a list of todo items that you can check off as you complete them
+2. The plan should have a list of todo 1items that you can check off as you complete them
 3. Before you begin working, check in with me and I will verify the plan.
 4. Then, begin working on the todo items, marking them as complete as you go.
 5. Please every step of the way just give me a high level explanation of what changes you made
@@ -123,33 +123,5 @@ Prizm Bets is a full-stack sports betting management platform with a Flask backe
 - ✅ Admin dashboard with monitoring
 - ✅ Email system with user communications  
 - ✅ Security audit completed
-- ✅ Live sports data system fully operational
 - 🔄 Production configuration (in progress)
 - ⏳ Domain propagation pending (prizmbets.app)
-
----
-
-## Recent Critical Fixes (September 2025)
-
-### Live Odds/Scores Display Issue - RESOLVED ✅
-**Issue**: "Unable to load odds" and "Failed to get live odds" errors preventing users from viewing sports data.
-
-**Root Causes Identified:**
-1. Backend `api_odds_comparison` endpoint returned data in wrong format (`bookmakers` array vs `sportsbooks` object)
-2. Missing sport key mapping (frontend sends `mma`, API expects `mma_mixed_martial_arts`)
-3. Frontend lacked defensive handling for malformed API responses
-4. Network error handling needed enhancement
-
-**Comprehensive Solution Implemented:**
-- **Backend**: Added `convert_bookmakers_to_sportsbooks()` function and sport key mapping (`SPORT_KEY_MAPPING`)
-- **Frontend**: Added format detection, validation, and enhanced retry logic with better error messages
-- **Configuration**: Cleaned up Firebase routing and increased function memory to 512MB
-- **Testing**: Verified all major sports endpoints (NFL, NBA, MLB, NHL, MMA) working correctly
-
-**Files Modified:**
-- `functions/main.py`: Added format conversion and sport mapping
-- `frontend/src/services/api.js`: Enhanced error handling and format validation
-- `frontend/src/components/Sports/LiveSports.js`: Added defensive data checks
-- `firebase.json`: Simplified routing configuration
-
-**Status**: ✅ PERMANENTLY RESOLVED - Live odds and scores display reliably with proper error handling and format consistency

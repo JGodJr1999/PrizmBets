@@ -13,6 +13,11 @@ const fadeIn = keyframes`
   }
 `;
 
+const shine = keyframes`
+  0% { left: -100%; }
+  100% { left: 100%; }
+`;
+
 const SuccessContainer = styled.div`
   background: linear-gradient(135deg, 
     ${props => props.theme.colors.accent.primary}15,
@@ -94,10 +99,7 @@ const Shine = styled.div`
     ${props => props.theme.colors.accent.primary}20,
     transparent
   );
-  animation: ${keyframes`
-    0% { left: -100%; }
-    100% { left: 100%; }
-  `} 2s ease-in-out;
+  animation: ${shine} 2s ease-in-out;
 `;
 
 const ProfessionalSuccessMessage = ({ 

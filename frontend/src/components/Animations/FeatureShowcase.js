@@ -1,15 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { 
-  Brain, 
-  BarChart3, 
-  DollarSign, 
-  Shield, 
-  Zap, 
-  TrendingUp,
-  Target,
-  Calculator
+import {
+  Brain,
+  BarChart3,
+  DollarSign,
+  Shield
 } from 'lucide-react';
 
 const ShowcaseContainer = styled(motion.section)`

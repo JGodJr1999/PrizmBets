@@ -650,6 +650,46 @@ export const apiService = {
       }
       throw new Error('Failed to get system health');
     }
+  },
+
+  // === SUBSCRIPTION & USAGE ENDPOINTS ===
+
+  // Get current user subscription and usage stats
+  async getSubscription() {
+    try {
+      const response = await api.get('/usage');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load subscription:', error);
+      // Return default free tier on error
+      return {
+        tier: 'free',
+        status: 'active',
+        limits: {
+          daily_evaluations: 3,
+          daily_odds_comparisons: 10,
+          max_bets: 50,
+          concurrent_games: 5
+        },
+        usage: {
+          evaluations_today: 0,
+          comparisons_today: 0,
+          total_bets: 0
+        }
+      };
+    }
+  },
+
+  // Track usage for an action (evaluation, odds_comparison, bet_tracking)
+  async trackUsage(actionType) {
+    try {
+      // Usage tracking happens server-side automatically
+      // This is just a placeholder for future client-side confirmation
+      return Promise.resolve({ tracked: true });
+    } catch (error) {
+      console.error('Failed to track usage:', error);
+      return Promise.resolve({ tracked: false });
+    }
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext } from 'react';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 // reCAPTCHA Context
@@ -32,8 +32,8 @@ export const useRecaptcha = () => {
 // reCAPTCHA Provider Component
 export const RecaptchaProvider = ({ children }) => {
   return (
-    <GoogleReCaptchaProvider 
-      reCaptchaKey={RECAPTCHA_SITE_KEY}
+    <GoogleReCaptchaProvider
+      sitekey={RECAPTCHA_SITE_KEY}
       scriptProps={{
         async: false,
         defer: false,

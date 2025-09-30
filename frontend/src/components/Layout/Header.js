@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, User, LogOut, Calendar, CreditCard, Menu, X, Trophy, Star, Upload, BookOpen, Lightbulb, Crown, Activity, Target, DollarSign } from 'lucide-react';
+import { Brain, BarChart3, User, Calendar, CreditCard, Menu, X, Trophy, Star, Upload, Crown, Target, DollarSign, Home, Layers } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
 
 const HeaderContainer = styled.header`
@@ -357,7 +357,7 @@ const Header = ({ user = null, onLogout }) => {
   };
 
   const handleLogoClick = () => {
-    navigate('/parlay');
+    navigate('/');
     setIsMobileMenuOpen(false);
   };
 
@@ -382,7 +382,23 @@ const Header = ({ user = null, onLogout }) => {
         </MobileMenuButton>
         
         <Nav isOpen={isMobileMenuOpen}>
-          <NavItem 
+          <NavItem
+            active={isActive('/')}
+            onClick={() => handleNavigation('/')}
+          >
+            <Home size={16} />
+            Home
+          </NavItem>
+
+          <NavItem
+            active={isActive('/parlay')}
+            onClick={() => handleNavigation('/parlay')}
+          >
+            <Layers size={16} />
+            Parlay Builder
+          </NavItem>
+
+          <NavItem
             active={isActive('/live-sports')}
             onClick={() => handleNavigation('/live-sports')}
           >
