@@ -1,10 +1,12 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
+import styled from 'styled-components';
 import { Toaster } from 'react-hot-toast';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { theme } from './styles/theme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AgentProvider } from './contexts/AgentContext';
 import { RecaptchaProvider } from './contexts/RecaptchaContext';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
@@ -35,6 +37,18 @@ const AccountPage = React.lazy(() => import('./pages/AccountPage'));
 const BettingHubPage = React.lazy(() => import('./pages/BettingHubPage'));
 const AffiliateDisclosurePage = React.lazy(() => import('./pages/AffiliateDisclosurePage'));
 const TestLiveData = React.lazy(() => import('./pages/TestLiveData'));
+const AgentDashboardPage = React.lazy(() => import('./pages/AgentDashboardPage'));
+
+// MainContent wrapper to account for fixed header
+const MainContent = styled.main`
+  margin-top: 80px; /* Account for fixed header height */
+  min-height: calc(100vh - 80px);
+
+  @media (max-width: 968px) {
+    margin-top: 70px; /* Smaller margin on mobile */
+    min-height: calc(100vh - 70px);
+  }
+`;
 
 // ProtectedRoute component to handle authentication-required pages
 const ProtectedRoute = ({ children }) => {
@@ -79,8 +93,9 @@ const AppContent = () => {
   return (
     <>
       <Header user={user} onLogout={logout} />
-      <Suspense fallback={<PageLoadingSkeleton />}>
-        <Routes>
+      <MainContent>
+        <Suspense fallback={<PageLoadingSkeleton />}>
+          <Routes>
           <Route path="/" element={<HomePage />} />
           <Route 
             path="/login" 
@@ -186,22 +201,31 @@ const AppContent = () => {
             path="/live-scores" 
             element={<LiveScoresPage />}
           />
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute>
                 <AdminPage />
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/affiliate-disclosure" 
+          <Route
+            path="/agents"
+            element={
+              <ProtectedRoute>
+                <AgentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/affiliate-disclosure"
             element={<AffiliateDisclosurePage />}
           />
           {/* Catch-all route for 404 errors */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
+      </MainContent>
       <Footer />
       <Toaster 
         position="top-right"
@@ -226,7 +250,9 @@ function App() {
         <RecaptchaProvider>
           <Router>
             <AuthProvider>
-              <AppContent />
+              <AgentProvider>
+                <AppContent />
+              </AgentProvider>
             </AuthProvider>
           </Router>
         </RecaptchaProvider>

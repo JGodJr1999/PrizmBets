@@ -690,6 +690,415 @@ export const apiService = {
       console.error('Failed to track usage:', error);
       return Promise.resolve({ tracked: false });
     }
+  },
+
+  // === AGENT SYSTEM ENDPOINTS ===
+
+  // Get agent system health status
+  async getAgentHealth() {
+    try {
+      const response = await api.get('/api_agents_health');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent system health');
+    }
+  },
+
+  // Get comprehensive agent dashboard data
+  async getAgentDashboard() {
+    try {
+      const response = await api.get('/api_agents_dashboard');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent dashboard data');
+    }
+  },
+
+  // Initialize the agent system
+  async initializeAgents(config = {}) {
+    try {
+      const response = await api.post('/api_agents_init', {
+        config: {
+          auto_start: true,
+          enable_monitoring: true,
+          ...config
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to initialize agent system');
+    }
+  },
+
+  // Execute a task with a specific agent
+  async executeAgentTask(agentId, taskType, taskData = {}, priority = 'medium') {
+    try {
+      if (!agentId || !taskType) {
+        throw new Error('Agent ID and task type are required');
+      }
+
+      const response = await api.post('/api_agents_task', {
+        agent_id: agentId,
+        task_type: taskType,
+        task_data: taskData,
+        priority: priority,
+        timestamp: new Date().toISOString()
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to execute task for agent ${agentId}`);
+    }
+  },
+
+  // Get status of all agents
+  async getAgentStatuses() {
+    try {
+      const response = await api.get('/api_agents_dashboard');
+      return response.data?.agents || {};
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent statuses');
+    }
+  },
+
+  // Get specific agent details
+  async getAgentDetails(agentId) {
+    try {
+      if (!agentId) {
+        throw new Error('Agent ID is required');
+      }
+
+      const response = await api.get(`/api_agents_dashboard?agent_id=${agentId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to get details for agent ${agentId}`);
+    }
+  },
+
+  // Get agent task history
+  async getAgentTaskHistory(agentId = null, limit = 50) {
+    try {
+      let url = `/api_agents_dashboard?include_history=true&limit=${limit}`;
+      if (agentId) {
+        url += `&agent_id=${agentId}`;
+      }
+
+      const response = await api.get(url);
+      return response.data?.task_history || [];
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent task history');
+    }
+  },
+
+  // Start a specific agent
+  async startAgent(agentId) {
+    try {
+      if (!agentId) {
+        throw new Error('Agent ID is required');
+      }
+
+      const response = await api.post('/api_agents_task', {
+        agent_id: agentId,
+        task_type: 'start_agent',
+        task_data: {},
+        priority: 'high'
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to start agent ${agentId}`);
+    }
+  },
+
+  // Stop a specific agent
+  async stopAgent(agentId) {
+    try {
+      if (!agentId) {
+        throw new Error('Agent ID is required');
+      }
+
+      const response = await api.post('/api_agents_task', {
+        agent_id: agentId,
+        task_type: 'stop_agent',
+        task_data: {},
+        priority: 'high'
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to stop agent ${agentId}`);
+    }
+  },
+
+  // Restart a specific agent
+  async restartAgent(agentId) {
+    try {
+      if (!agentId) {
+        throw new Error('Agent ID is required');
+      }
+
+      const response = await api.post('/api_agents_task', {
+        agent_id: agentId,
+        task_type: 'restart_agent',
+        task_data: {},
+        priority: 'high'
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to restart agent ${agentId}`);
+    }
+  },
+
+  // Get agent system metrics
+  async getAgentMetrics() {
+    try {
+      const response = await api.get('/api_agents_dashboard?include_metrics=true');
+      return response.data?.metrics || {};
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent system metrics');
+    }
+  },
+
+  // Get agent logs
+  async getAgentLogs(agentId = null, limit = 100, level = 'all') {
+    try {
+      let url = `/api_agents_dashboard?include_logs=true&limit=${limit}&level=${level}`;
+      if (agentId) {
+        url += `&agent_id=${agentId}`;
+      }
+
+      const response = await api.get(url);
+      return response.data?.logs || [];
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent logs');
+    }
+  },
+
+  // Configure agent settings
+  async configureAgent(agentId, configuration) {
+    try {
+      if (!agentId || !configuration) {
+        throw new Error('Agent ID and configuration are required');
+      }
+
+      const response = await api.post('/api_agents_task', {
+        agent_id: agentId,
+        task_type: 'configure_agent',
+        task_data: { configuration },
+        priority: 'medium'
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(`Failed to configure agent ${agentId}`);
+    }
+  },
+
+  // === USER PREFERENCES & CUSTOMIZATION ===
+  // Get user agent preferences
+  async getUserAgentPreferences() {
+    try {
+      const response = await api.get('/api/user/agent-preferences');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get user agent preferences');
+    }
+  },
+
+  // Update user agent preferences
+  async updateUserAgentPreferences(preferences) {
+    try {
+      const response = await api.put('/api/user/agent-preferences', preferences);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to update user agent preferences');
+    }
+  },
+
+  // Get agent templates for common workflows
+  async getAgentTemplates() {
+    try {
+      const response = await api.get('/api/agent-templates');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent templates');
+    }
+  },
+
+  // Create custom agent workflow from template
+  async createAgentWorkflowFromTemplate(templateId, customization = {}) {
+    try {
+      const response = await api.post('/api/agent-workflows', {
+        template_id: templateId,
+        customization,
+        timestamp: new Date().toISOString()
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to create agent workflow from template');
+    }
+  },
+
+  // Get user's custom agent workflows
+  async getUserAgentWorkflows() {
+    try {
+      const response = await api.get('/api/user/agent-workflows');
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get user agent workflows');
+    }
+  },
+
+  // Schedule agent tasks for automation
+  async scheduleAgentTask(agentId, taskConfig) {
+    try {
+      const response = await api.post('/api/agent-scheduler', {
+        agent_id: agentId,
+        schedule: taskConfig.schedule,
+        task_type: taskConfig.taskType,
+        task_data: taskConfig.taskData || {},
+        enabled: taskConfig.enabled !== false,
+        notification_preferences: taskConfig.notifications || {},
+        timestamp: new Date().toISOString()
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to schedule agent task');
+    }
+  },
+
+  // Get agent performance analytics
+  async getAgentAnalytics(timeRange = '7d', agentId = null) {
+    try {
+      let url = `/api/agent-analytics?time_range=${timeRange}`;
+      if (agentId) {
+        url += `&agent_id=${agentId}`;
+      }
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent analytics');
+    }
+  },
+
+  // Get agent cost tracking data
+  async getAgentCostData(timeRange = '30d') {
+    try {
+      const response = await api.get(`/api/agent-costs?time_range=${timeRange}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent cost data');
+    }
+  },
+
+  // Export agent data and reports
+  async exportAgentData(exportConfig) {
+    try {
+      const response = await api.post('/api/agent-export', {
+        export_type: exportConfig.type || 'comprehensive',
+        time_range: exportConfig.timeRange || '30d',
+        agents: exportConfig.agents || [],
+        format: exportConfig.format || 'json',
+        include_analytics: exportConfig.includeAnalytics !== false,
+        include_cost_data: exportConfig.includeCostData !== false,
+        timestamp: new Date().toISOString()
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to export agent data');
+    }
+  },
+
+  // Get real-time agent notifications
+  async getAgentNotifications(limit = 20) {
+    try {
+      const response = await api.get(`/api/agent-notifications?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to get agent notifications');
+    }
+  },
+
+  // Mark agent notifications as read
+  async markNotificationsRead(notificationIds) {
+    try {
+      const response = await api.patch('/api/agent-notifications', {
+        notification_ids: notificationIds,
+        action: 'mark_read',
+        timestamp: new Date().toISOString()
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to mark notifications as read');
+    }
   }
 };
 

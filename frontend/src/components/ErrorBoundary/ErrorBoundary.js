@@ -7,64 +7,64 @@ const ErrorContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${props => props.theme.colors.background.primary};
-  padding: ${props => props.theme.spacing.lg};
+  background: ${props => props.theme?.colors?.background?.primary || '#0a0a0a'};
+  padding: ${props => props.theme?.spacing?.lg || '1.5rem'};
 `;
 
 const ErrorCard = styled.div`
-  background: ${props => props.theme.colors.background.card};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  padding: ${props => props.theme.spacing.xxl};
+  background: ${props => props.theme?.colors?.background?.card || '#1e1e1e'};
+  border: 1px solid ${props => props.theme?.colors?.border?.primary || '#333333'};
+  border-radius: ${props => props.theme?.borderRadius?.lg || '12px'};
+  padding: ${props => props.theme?.spacing?.xxl || '3rem'};
   max-width: 500px;
   width: 100%;
   text-align: center;
-  box-shadow: ${props => props.theme.shadows.lg};
+  box-shadow: ${props => props.theme?.shadows?.lg || '0 10px 15px rgba(0, 0, 0, 0.5)'};
 `;
 
 const ErrorIcon = styled.div`
-  color: ${props => props.theme.colors.accent.secondary};
-  margin-bottom: ${props => props.theme.spacing.lg};
+  color: ${props => props.theme?.colors?.accent?.secondary || '#ff6b6b'};
+  margin-bottom: ${props => props.theme?.spacing?.lg || '1.5rem'};
   display: flex;
   justify-content: center;
 `;
 
 const ErrorTitle = styled.h1`
-  color: ${props => props.theme.colors.text.primary};
+  color: ${props => props.theme?.colors?.text?.primary || '#ffffff'};
   font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme?.spacing?.md || '1rem'};
 `;
 
 const ErrorMessage = styled.p`
-  color: ${props => props.theme.colors.text.secondary};
+  color: ${props => props.theme?.colors?.text?.secondary || '#cccccc'};
   font-size: 1rem;
   line-height: 1.5;
-  margin-bottom: ${props => props.theme.spacing.lg};
+  margin-bottom: ${props => props.theme?.spacing?.lg || '1.5rem'};
 `;
 
 const ErrorDetails = styled.details`
-  margin-bottom: ${props => props.theme.spacing.lg};
+  margin-bottom: ${props => props.theme?.spacing?.lg || '1.5rem'};
   text-align: left;
-  
+
   summary {
-    color: ${props => props.theme.colors.text.secondary};
+    color: ${props => props.theme?.colors?.text?.secondary || '#cccccc'};
     font-size: 0.9rem;
     cursor: pointer;
-    margin-bottom: ${props => props.theme.spacing.sm};
-    
+    margin-bottom: ${props => props.theme?.spacing?.sm || '0.5rem'};
+
     &:hover {
-      color: ${props => props.theme.colors.text.primary};
+      color: ${props => props.theme?.colors?.text?.primary || '#ffffff'};
     }
   }
-  
+
   pre {
-    background: ${props => props.theme.colors.background.secondary};
-    border: 1px solid ${props => props.theme.colors.border.secondary};
-    border-radius: ${props => props.theme.borderRadius.sm};
-    padding: ${props => props.theme.spacing.sm};
+    background: ${props => props.theme?.colors?.background?.secondary || '#1a1a1a'};
+    border: 1px solid ${props => props.theme?.colors?.border?.secondary || '#444444'};
+    border-radius: ${props => props.theme?.borderRadius?.sm || '4px'};
+    padding: ${props => props.theme?.spacing?.sm || '0.5rem'};
     font-size: 0.8rem;
-    color: ${props => props.theme.colors.text.muted};
+    color: ${props => props.theme?.colors?.text?.muted || '#888888'};
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-word;
@@ -73,22 +73,22 @@ const ErrorDetails = styled.details`
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: ${props => props.theme.spacing.md};
+  gap: ${props => props.theme?.spacing?.md || '1rem'};
   justify-content: center;
   flex-wrap: wrap;
 `;
 
 const ErrorButton = styled.button`
-  background: ${props => props.primary ? 
-    `linear-gradient(135deg, ${props.theme.colors.accent.primary}, ${props.theme.colors.accent.primary}dd)` :
+  background: ${props => props.primary ?
+    `linear-gradient(135deg, ${props.theme?.colors?.accent?.primary || '#FFD700'}, ${props.theme?.colors?.accent?.primary || '#FFD700'}dd)` :
     'transparent'
   };
-  border: 1px solid ${props => props.theme.colors.accent.primary};
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.lg};
-  color: ${props => props.primary ? 
-    props.theme.colors.background.primary : 
-    props.theme.colors.accent.primary
+  border: 1px solid ${props => props.theme?.colors?.accent?.primary || '#FFD700'};
+  border-radius: ${props => props.theme?.borderRadius?.md || '8px'};
+  padding: ${props => props.theme?.spacing?.sm || '0.5rem'} ${props => props.theme?.spacing?.lg || '1.5rem'};
+  color: ${props => props.primary ?
+    props.theme?.colors?.background?.primary || '#0a0a0a' :
+    props.theme?.colors?.accent?.primary || '#FFD700'
   };
   font-size: 0.9rem;
   font-weight: 500;
@@ -96,14 +96,14 @@ const ErrorButton = styled.button`
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: ${props => props.theme.spacing.xs};
-  
+  gap: ${props => props.theme?.spacing?.xs || '0.25rem'};
+
   &:hover {
     transform: translateY(-1px);
-    box-shadow: ${props => props.theme.shadows.md};
+    box-shadow: ${props => props.theme?.shadows?.md || '0 4px 6px rgba(0, 0, 0, 0.4)'};
     background: ${props => props.primary ?
-      props.theme.colors.accent.primary :
-      `${props.theme.colors.accent.primary}10`
+      props.theme?.colors?.accent?.primary || '#FFD700' :
+      `${props.theme?.colors?.accent?.primary || '#FFD700'}10`
     };
   }
 `;

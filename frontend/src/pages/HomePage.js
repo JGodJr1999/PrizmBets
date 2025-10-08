@@ -1,116 +1,218 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
-import HeroSection from '../components/Home/HeroSection';
-import LiveActionSection from '../components/Home/LiveActionSection';
-import FeaturedCards from '../components/Home/FeaturedCards';
-import QuickAccessDashboard from '../components/Home/QuickAccessDashboard';
-import SocialProofSection from '../components/Home/SocialProofSection';
+import { useNavigate } from 'react-router-dom';
+import { Layers, Activity, TrendingUp, Users, Trophy, Brain } from 'lucide-react';
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme.colors.background.primary};
-  overflow-x: hidden;
-  position: relative;
+  background: #0a0a0a;
+  padding: 2rem;
 `;
 
-const ScrollToTopButton = styled(motion.button)`
-  position: fixed;
-  bottom: ${props => props.theme.spacing.xl};
-  right: ${props => props.theme.spacing.xl};
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg,
-    ${props => props.theme.colors.accent.primary} 0%,
-    ${props => props.theme.colors.accent.secondary} 100%
-  );
+const HeroSection = styled.section`
+  text-align: center;
+  padding: 4rem 1rem;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  border-radius: 12px;
+  border: 1px solid #333;
+`;
+
+const Title = styled.h1`
+  font-size: 3rem;
+  font-weight: 700;
+  color: #FFD700;
+  margin-bottom: 1rem;
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.25rem;
+  color: #cccccc;
+  margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+`;
+
+const CTAButton = styled.button`
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #0a0a0a;
   border: none;
-  color: ${props => props.theme.colors.background.primary};
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
-  box-shadow: ${props => props.theme.shadows.xl};
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const QuickActions = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto 3rem;
+`;
+
+const ActionCard = styled.div`
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover {
-    transform: scale(1.1);
-  }
-
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    bottom: ${props => props.theme.spacing.lg};
-    right: ${props => props.theme.spacing.lg};
-    width: 48px;
-    height: 48px;
+    background: #2a2a2a;
+    border-color: #FFD700;
+    transform: translateY(-4px);
   }
 `;
 
+const CardIcon = styled.div`
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+
+  svg {
+    color: #0a0a0a;
+  }
+`;
+
+const CardTitle = styled.h3`
+  color: #ffffff;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+`;
+
+const CardDescription = styled.p`
+  color: #888888;
+  font-size: 0.95rem;
+`;
+
+const FeaturesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const FeatureCard = styled.div`
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+`;
+
+const FeatureIcon = styled.div`
+  color: #FFD700;
+  margin-bottom: 1rem;
+`;
+
+const FeatureTitle = styled.h4`
+  color: #FFD700;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+`;
+
+const FeatureText = styled.p`
+  color: #cccccc;
+  font-size: 0.9rem;
+`;
+
 const HomePage = () => {
-  const [showScrollButton, setShowScrollButton] = useState(false);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollButton(window.pageYOffset > 300);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const pageVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.1
-      }
+  const quickActions = [
+    {
+      icon: <Layers size={24} />,
+      title: 'Build a Parlay',
+      description: 'AI-powered parlay analysis and recommendations',
+      path: '/parlay'
+    },
+    {
+      icon: <Activity size={24} />,
+      title: 'Live Scores',
+      description: 'Real-time game updates and scores',
+      path: '/live-scores'
+    },
+    {
+      icon: <TrendingUp size={24} />,
+      title: 'Odds Comparison',
+      description: 'Find the best odds across all sportsbooks',
+      path: '/odds-comparison'
+    },
+    {
+      icon: <Users size={24} />,
+      title: 'Pick\'Em Pools',
+      description: 'Join or create weekly pick\'em competitions',
+      path: '/pick-em'
     }
-  };
+  ];
+
+  const features = [
+    {
+      icon: <Brain size={32} />,
+      title: 'AI-Powered Analysis',
+      text: 'Get intelligent insights on every bet'
+    },
+    {
+      icon: <Trophy size={32} />,
+      title: 'Track Your Success',
+      text: 'Monitor your betting performance and ROI'
+    },
+    {
+      icon: <Activity size={32} />,
+      title: 'Real-Time Updates',
+      text: 'Live scores, odds, and betting opportunities'
+    }
+  ];
 
   return (
-    <PageContainer
-      as={motion.div}
-      initial="hidden"
-      animate="visible"
-      variants={pageVariants}
-    >
-      {/* Hero Section with personalized welcome and live odds ticker */}
-      <HeroSection />
+    <PageContainer>
+      <HeroSection>
+        <Title>Welcome to Prizm Bets</Title>
+        <Subtitle>Your Complete Sports Betting Command Center</Subtitle>
+        <CTAButton onClick={() => navigate('/parlay')}>
+          Start Building Parlays
+        </CTAButton>
+      </HeroSection>
 
-      {/* Quick Access Dashboard - colorful tiles for main actions */}
-      <QuickAccessDashboard />
+      <QuickActions>
+        {quickActions.map((action, index) => (
+          <ActionCard key={index} onClick={() => navigate(action.path)}>
+            <CardIcon>{action.icon}</CardIcon>
+            <CardTitle>{action.title}</CardTitle>
+            <CardDescription>{action.description}</CardDescription>
+          </ActionCard>
+        ))}
+      </QuickActions>
 
-      {/* Live Action Section - real-time scores and betting opportunities */}
-      <LiveActionSection />
-
-      {/* Featured Content Cards - AI picks, trending, wins, streaks */}
-      <FeaturedCards />
-
-      {/* Social Proof Section - live feeds, leaderboard, community stats */}
-      <SocialProofSection />
-
-      {/* Scroll to Top Button */}
-      <ScrollToTopButton
-        onClick={scrollToTop}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{
-          opacity: showScrollButton ? 1 : 0,
-          scale: showScrollButton ? 1 : 0
-        }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        transition={{ duration: 0.3 }}
-      >
-        ↑
-      </ScrollToTopButton>
+      <FeaturesGrid>
+        {features.map((feature, index) => (
+          <FeatureCard key={index}>
+            <FeatureIcon>{feature.icon}</FeatureIcon>
+            <FeatureTitle>{feature.title}</FeatureTitle>
+            <FeatureText>{feature.text}</FeatureText>
+          </FeatureCard>
+        ))}
+      </FeaturesGrid>
     </PageContainer>
   );
 };

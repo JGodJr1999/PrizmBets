@@ -19,26 +19,26 @@ const pulse = keyframes`
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme.colors.background.primary};
-  padding: ${props => props.theme.spacing.xl} ${props => props.theme.spacing.lg};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    padding: ${props => props.theme.spacing.lg} ${props => props.theme.spacing.md};
+  background: ${props => props.theme?.colors?.background?.primary || '#0a0a0a'};
+  padding: ${props => props.theme?.spacing?.xl || '2rem'} ${props => props.theme?.spacing?.lg || '1.5rem'};
+
+  @media (max-width: ${props => props.theme?.breakpoints?.md || '768px'}) {
+    padding: ${props => props.theme?.spacing?.lg || '1.5rem'} ${props => props.theme?.spacing?.md || '1rem'};
   }
 `;
 
 const Header = styled.div`
   max-width: 800px;
-  margin: 0 auto ${props => props.theme.spacing.xl} auto;
+  margin: 0 auto ${props => props.theme?.spacing?.xl || '2rem'} auto;
   text-align: center;
-  background: ${props => props.theme.colors.background.card};
+  background: ${props => props.theme?.colors?.background?.card || '#1e1e1e'};
   backdrop-filter: blur(20px);
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  padding: ${props => props.theme.spacing.xl};
+  border: 1px solid ${props => props.theme?.colors?.border?.primary || '#333333'};
+  border-radius: ${props => props.theme?.borderRadius?.lg || '12px'};
+  padding: ${props => props.theme?.spacing?.xl || '2rem'};
   position: relative;
   overflow: hidden;
-  box-shadow: ${props => props.theme.shadows.lg};
+  box-shadow: ${props => props.theme?.shadows?.lg || '0 10px 15px rgba(0, 0, 0, 0.5)'};
   
   &::before {
     content: '';

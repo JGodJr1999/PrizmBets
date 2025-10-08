@@ -8,7 +8,9 @@ import {
   Upload,
   BarChart3,
   History,
-  ChevronDown
+  ChevronDown,
+  Target,
+  CreditCard
 } from 'lucide-react';
 
 const UserMenuContainer = styled.div`
@@ -326,6 +328,20 @@ const UserColumnMenu = ({ user, onNavigate, onLogout }) => {
               <SectionTitle>Betting Tools</SectionTitle>
               <MenuItem
                 variants={itemVariants}
+                onClick={() => handleMenuItemClick('/betting-hub')}
+                whileHover={{ x: 4 }}
+              >
+                <MenuItemIcon>
+                  <Target size={18} />
+                </MenuItemIcon>
+                <MenuItemContent>
+                  <MenuItemLabel>Betting Hub</MenuItemLabel>
+                  <MenuItemDescription>Advanced betting tools and insights</MenuItemDescription>
+                </MenuItemContent>
+              </MenuItem>
+
+              <MenuItem
+                variants={itemVariants}
                 onClick={() => handleMenuItemClick('/betting-data')}
                 whileHover={{ x: 4 }}
               >
@@ -363,6 +379,23 @@ const UserColumnMenu = ({ user, onNavigate, onLogout }) => {
                 <MenuItemContent>
                   <MenuItemLabel>Betting History</MenuItemLabel>
                   <MenuItemDescription>Review your past bets and results</MenuItemDescription>
+                </MenuItemContent>
+              </MenuItem>
+            </MenuSection>
+
+            <MenuSection>
+              <SectionTitle>Subscription</SectionTitle>
+              <MenuItem
+                variants={itemVariants}
+                onClick={() => handleMenuItemClick('/subscription')}
+                whileHover={{ x: 4 }}
+              >
+                <MenuItemIcon>
+                  <CreditCard size={18} />
+                </MenuItemIcon>
+                <MenuItemContent>
+                  <MenuItemLabel>Manage Subscription</MenuItemLabel>
+                  <MenuItemDescription>View and manage your subscription plan</MenuItemDescription>
                 </MenuItemContent>
               </MenuItem>
             </MenuSection>
