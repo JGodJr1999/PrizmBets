@@ -581,7 +581,7 @@ const AgentDashboardPage = () => {
               active={activeTab === 'automation'}
               onClick={() => setActiveTab('automation')}
             >
-              <Calendar size={16} />
+              <Clock size={16} />
               Automation
             </TabButton>
           </TabNavigation>
@@ -787,7 +787,7 @@ const AgentDashboardPage = () => {
 
             {activeTab === 'automation' && (
               <div style={{ padding: '2rem', textAlign: 'center', color: '#a0a0a0' }}>
-                <Calendar size={48} />
+                <Clock size={48} />
                 <h3>Agent Automation & Scheduling</h3>
                 <p>Advanced automation features coming soon!</p>
               </div>
