@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { apiService } from '../services/api';
 import toast from 'react-hot-toast';
 import { auth } from '../config/firebase';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import analytics from '../utils/analytics';
 
 // Auth Context
@@ -302,6 +302,9 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
+      // Sign out from Firebase
+      await signOut(auth);
+
       if (state.accessToken) {
         await apiService.logout(state.accessToken);
       }
@@ -480,6 +483,10 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+      // Set Firebase persistence based on "Remember Me" choice
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
 
       // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Brain } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Brain, Shield, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRecaptcha } from '../contexts/RecaptchaContext';
@@ -173,9 +173,67 @@ const ErrorMessage = styled.div`
 
 const CheckboxGroup = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: ${props => props.theme.spacing.sm};
   margin-top: ${props => props.theme.spacing.sm};
+`;
+
+const CheckboxRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const TooltipContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+`;
+
+const Tooltip = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: ${props => props.theme.colors.background.tertiary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.sm};
+  padding: ${props => props.theme.spacing.sm};
+  font-size: 0.8rem;
+  color: ${props => props.theme.colors.text.secondary};
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: ${props => props.visible ? 1 : 0};
+  visibility: ${props => props.visible ? 'visible' : 'hidden'};
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  margin-bottom: ${props => props.theme.spacing.xs};
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: ${props => props.theme.colors.border.primary};
+  }
+`;
+
+const SecurityWarning = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+  color: ${props => props.theme.colors.text.muted};
+  font-size: 0.8rem;
+  margin-top: ${props => props.theme.spacing.xs};
+  padding: ${props => props.theme.spacing.xs};
+  background: ${props => props.theme.colors.background.secondary};
+  border-radius: ${props => props.theme.borderRadius.sm};
+  border-left: 3px solid ${props => props.theme.colors.accent.warning || props.theme.colors.accent.secondary};
 `;
 
 const Checkbox = styled.input`
@@ -190,6 +248,9 @@ const CheckboxLabel = styled.label`
   font-size: 0.9rem;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
 `;
 
 const LoginPage = () => {
@@ -205,6 +266,15 @@ const LoginPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Load saved "Remember Me" preference
+  useEffect(() => {
+    const savedPreference = localStorage.getItem('prizmbets_remember_preference');
+    if (savedPreference === 'true') {
+      setFormData(prev => ({ ...prev, rememberMe: true }));
+    }
+  }, []);
   
   // Get the intended destination from location state or default to home
   const from = location.state?.from?.pathname || '/';
@@ -215,7 +285,12 @@ const LoginPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
+
+    // Save "Remember Me" preference
+    if (name === 'rememberMe') {
+      localStorage.setItem('prizmbets_remember_preference', checked.toString());
+    }
+
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
@@ -223,7 +298,7 @@ const LoginPage = () => {
         [name]: ''
       }));
     }
-    
+
     // Clear global auth error when user starts typing
     if (error) {
       clearError();
@@ -332,16 +407,34 @@ const LoginPage = () => {
           </InputGroup>
           
           <CheckboxGroup>
-            <Checkbox
-              id="rememberMe"
-              name="rememberMe"
-              type="checkbox"
-              checked={formData.rememberMe}
-              onChange={handleChange}
-            />
-            <CheckboxLabel htmlFor="rememberMe">
-              Remember me for 30 days
-            </CheckboxLabel>
+            <CheckboxRow>
+              <Checkbox
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+              />
+              <CheckboxLabel htmlFor="rememberMe">
+                Keep me signed in for 30 days
+                <TooltipContainer
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                >
+                  <Info size={14} style={{ marginLeft: '4px', opacity: 0.7 }} />
+                  <Tooltip visible={showTooltip}>
+                    Stay signed in even after closing your browser. We'll remember you for 30 days or until you sign out.
+                  </Tooltip>
+                </TooltipContainer>
+              </CheckboxLabel>
+            </CheckboxRow>
+
+            {formData.rememberMe && (
+              <SecurityWarning>
+                <Shield size={14} />
+                <span>Only use on your personal device. Don't check this on shared or public computers.</span>
+              </SecurityWarning>
+            )}
           </CheckboxGroup>
           
           {error && (
