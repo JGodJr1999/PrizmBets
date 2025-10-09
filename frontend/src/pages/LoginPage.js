@@ -195,7 +195,7 @@ const CheckboxLabel = styled.label`
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, registerWithFirebase, isLoading, error, clearError } = useAuth();
+  const { loginWithFirebaseEmail, registerWithFirebase, isLoading, error, clearError } = useAuth();
   const { executeRecaptchaAction } = useRecaptcha();
   
   const [formData, setFormData] = useState({
@@ -264,7 +264,7 @@ const LoginPage = () => {
     //   return;
     // }
     
-    const result = await login(formData.email, formData.password, formData.rememberMe);
+    const result = await loginWithFirebaseEmail(formData.email, formData.password, formData.rememberMe);
     
     if (result.success) {
       // Redirect to intended destination

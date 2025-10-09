@@ -22,7 +22,6 @@ import {
   Target,
   Globe,
   Layers,
-  Calendar,
   Monitor,
   GitBranch
 } from 'lucide-react';

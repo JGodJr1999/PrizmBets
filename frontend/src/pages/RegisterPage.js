@@ -215,7 +215,7 @@ const CheckboxLabel = styled.label`
 const RegisterPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const { register, loginWithFirebase, isLoading, error, clearError } = useAuth();
+  const { registerWithFirebase, loginWithFirebase, isLoading, error, clearError } = useAuth();
   const { executeRecaptchaAction } = useRecaptcha();
   
   const [formData, setFormData] = useState({
@@ -284,7 +284,7 @@ const RegisterPage = () => {
       // recaptcha_token: recaptchaToken
     };
     
-    const result = await register(registrationData);
+    const result = await registerWithFirebase(registrationData);
     
     if (result.success) {
       // Redirect to dashboard after successful registration

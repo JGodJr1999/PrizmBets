@@ -438,34 +438,88 @@ export const AuthProvider = ({ children }) => {
         userData.password
       );
       
-      // Prepare backend user data
-      const backendUserData = {
-        ...userData,
-        firebase_uid: userCredential.user.uid,
-        provider: 'email'
+      // Get Firebase ID token for authentication
+      const idToken = await userCredential.user.getIdToken();
+
+      // Create user object from Firebase data
+      const user = {
+        uid: userCredential.user.uid,
+        name: userData.name,
+        email: userCredential.user.email,
+        provider: 'email',
+        terms_accepted: userData.terms_accepted,
+        marketing_emails: userData.marketing_emails
       };
 
-      // Register user in Flask backend
-      const response = await apiService.registerFirebaseUser(backendUserData);
-      
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: {
-          user: response.user,
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token
+          user: user,
+          accessToken: idToken,
+          refreshToken: null // Firebase handles token refresh internally
         }
       });
-      
-      // Store tokens and user data
-      storeTokens(response.access_token, response.refresh_token, false);
-      storeUser(response.user, false);
-      
-      toast.success(`Welcome to PrizmBets, ${response.user.name}!`);
+
+      // Store user data and Firebase token
+      storeTokens(idToken, null, false);
+      storeUser(user, false);
+
+      toast.success(`Welcome to PrizmBets, ${user.name}!`);
       return { success: true };
       
     } catch (error) {
       const errorMessage = error.response?.data?.error || error.message || 'Registration failed';
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Firebase email/password login
+  const loginWithFirebaseEmail = async (email, password, rememberMe = false) => {
+    try {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Get Firebase ID token for backend authentication
+      const idToken = await userCredential.user.getIdToken();
+
+      // Prepare user data for backend verification
+      const firebaseUserData = {
+        firebase_uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        id_token: idToken
+      };
+
+      // Create user object from Firebase data
+      const user = {
+        uid: userCredential.user.uid,
+        name: userCredential.user.displayName || userCredential.user.email.split('@')[0],
+        email: userCredential.user.email,
+        provider: 'email'
+      };
+
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: {
+          user: user,
+          accessToken: idToken,
+          refreshToken: null // Firebase handles token refresh internally
+        }
+      });
+
+      // Store tokens and user data
+      storeTokens(idToken, null, rememberMe);
+      storeUser(user, rememberMe);
+
+      toast.success(`Welcome back, ${user.name}!`);
+      return { success: true };
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
@@ -482,6 +536,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     loginWithFirebase,
+    loginWithFirebaseEmail,
     registerWithFirebase,
     logout,
     updateProfile,
