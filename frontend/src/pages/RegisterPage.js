@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, User, Brain } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, Brain, Check, X, Hash, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRecaptcha } from '../contexts/RecaptchaContext';
-import { validateRegistrationForm, getPasswordStrength, getPasswordStrengthColor } from '../utils/authValidation';
+import {
+  validateRegistrationForm,
+  getPasswordStrength,
+  getPasswordStrengthColor,
+  validatePasswordRequirements,
+  isPasswordValid,
+  getPasswordBorderColor
+} from '../utils/authValidation';
 import { useTheme } from 'styled-components';
 import SocialAuthButtons from '../components/Auth/SocialAuthButtons';
 import ProfessionalSpinner from '../components/UI/ProfessionalSpinner';
@@ -180,6 +187,52 @@ const PasswordStrength = styled.div`
   font-weight: 500;
 `;
 
+const PasswordRequirements = styled.div`
+  margin-top: ${props => props.theme.spacing.sm};
+  padding: ${props => props.theme.spacing.sm};
+  background: ${props => props.theme.colors.background.secondary};
+  border-radius: ${props => props.theme.borderRadius.sm};
+  border-left: 3px solid ${props => props.theme.colors.accent.primary};
+`;
+
+const RequirementsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const RequirementItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+  font-size: 0.8rem;
+  color: ${props => props.met ?
+    (props.theme.colors.betting.positive || '#22C55E') :
+    (props.required ?
+      (props.theme.colors.accent.secondary || '#EF4444') :
+      props.theme.colors.text.muted
+    )
+  };
+  transition: color 0.2s ease;
+`;
+
+const RequirementIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+`;
+
+const RequirementText = styled.span`
+  ${props => props.required && !props.met && `font-weight: 500;`}
+`;
+
+const PasswordInputStyled = styled(Input)`
+  border-color: ${props => props.borderColor || props.theme.colors.border.secondary};
+  transition: border-color 0.2s ease;
+`;
+
 const CheckboxGroup = styled.div`
   display: flex;
   align-items: flex-start;
@@ -307,6 +360,9 @@ const RegisterPage = () => {
 
   const passwordStrength = getPasswordStrength(formData.password);
   const passwordStrengthColor = getPasswordStrengthColor(passwordStrength, theme);
+  const passwordValidation = validatePasswordRequirements(formData.password);
+  const passwordBorderColor = getPasswordBorderColor(formData.password, theme);
+  const isFormValid = isPasswordValid(formData.password) && formData.confirmPassword === formData.password && formData.termsAccepted;
 
   return (
     <RegisterContainer>
@@ -366,7 +422,7 @@ const RegisterPage = () => {
               <InputIcon>
                 <Lock size={20} />
               </InputIcon>
-              <Input
+              <PasswordInputStyled
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -374,6 +430,7 @@ const RegisterPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 autoComplete="new-password"
+                borderColor={formData.password ? passwordBorderColor : undefined}
               />
               <PasswordToggle
                 type="button"
@@ -382,11 +439,43 @@ const RegisterPage = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </PasswordToggle>
             </InputWrapper>
+
             {formData.password && (
-              <PasswordStrength color={passwordStrengthColor}>
-                Password strength: {passwordStrength.replace('-', ' ')}
-              </PasswordStrength>
+              <>
+                <PasswordStrength color={passwordStrengthColor}>
+                  Password strength: {passwordStrength.replace('-', ' ')}
+                </PasswordStrength>
+
+                <PasswordRequirements>
+                  <RequirementsList>
+                    {Object.entries(passwordValidation.requirements).map(([key, requirement]) => (
+                      <RequirementItem
+                        key={key}
+                        met={requirement.met}
+                        required={requirement.required}
+                        theme={theme}
+                      >
+                        <RequirementIcon>
+                          {requirement.met ? (
+                            <Check size={14} />
+                          ) : (
+                            <X size={14} />
+                          )}
+                        </RequirementIcon>
+                        <RequirementText
+                          met={requirement.met}
+                          required={requirement.required}
+                        >
+                          {requirement.text}
+                          {!requirement.required && ' (optional)'}
+                        </RequirementText>
+                      </RequirementItem>
+                    ))}
+                  </RequirementsList>
+                </PasswordRequirements>
+              </>
             )}
+
             {errors.password && <ErrorMessage>{errors.password}</ErrorMessage>}
           </InputGroup>
           
@@ -455,7 +544,7 @@ const RegisterPage = () => {
             />
           )}
           
-          <RegisterButton type="submit" disabled={isLoading}>
+          <RegisterButton type="submit" disabled={isLoading || !isFormValid}>
             {isLoading ? (
               <>
                 <ProfessionalSpinner size="small" showMessage={false} inline />

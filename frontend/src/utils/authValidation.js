@@ -46,62 +46,51 @@ export const validateEmail = (email) => {
 // Password validation
 export const validatePassword = (password) => {
   const errors = [];
-  
+
   if (!password) {
     errors.push('Password is required');
     return errors;
   }
-  
+
   if (typeof password !== 'string') {
     errors.push('Password must be a string');
     return errors;
   }
-  
-  if (password.length < 8) {
+
+  // Use the enhanced validation function
+  const validation = validatePasswordRequirements(password);
+
+  if (!validation.requirements.length.met) {
     errors.push('Password must be at least 8 characters long');
   }
-  
+
+  if (!validation.requirements.number.met) {
+    errors.push('Password must contain at least one number');
+  }
+
+  if (!validation.requirements.special.met) {
+    errors.push('Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)');
+  }
+
   if (password.length > 128) {
     errors.push('Password is too long (maximum 128 characters)');
   }
-  
-  // Check for character requirements
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
-  if (!hasUppercase) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
-  
-  if (!hasLowercase) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
-  
-  if (!hasNumbers) {
-    errors.push('Password must contain at least one number');
-  }
-  
-  if (!hasSpecialChar) {
-    errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
-  }
-  
+
   // Check for common weak passwords
   const commonPasswords = [
     'password', 'password123', '123456', 'qwerty', 'abc123',
     'letmein', 'welcome123', 'admin123', 'password1', '12345678'
   ];
-  
+
   if (commonPasswords.includes(password.toLowerCase())) {
     errors.push('This password is too common. Please choose a stronger password');
   }
-  
+
   // Check for sequential or repeated characters
   if (/(.)\1{2,}/.test(password)) {
     errors.push('Password cannot contain more than 2 consecutive identical characters');
   }
-  
+
   return errors;
 };
 
@@ -175,33 +164,58 @@ export const validateTermsAccepted = (termsAccepted) => {
   return errors;
 };
 
+// Enhanced password requirements validation for real-time feedback
+export const validatePasswordRequirements = (password) => {
+  const requirements = {
+    length: {
+      met: password.length >= 8,
+      text: 'At least 8 characters',
+      required: true
+    },
+    number: {
+      met: /\d/.test(password),
+      text: 'Contains a number',
+      required: true
+    },
+    special: {
+      met: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password),
+      text: 'Contains a special character',
+      required: true
+    },
+    uppercase: {
+      met: /[A-Z]/.test(password),
+      text: 'Contains uppercase letter',
+      required: false // Optional but recommended
+    },
+    lowercase: {
+      met: /[a-z]/.test(password),
+      text: 'Contains lowercase letter',
+      required: false // Optional but recommended
+    }
+  };
+
+  const requiredMet = requirements.length.met && requirements.number.met && requirements.special.met;
+  const allMet = Object.values(requirements).every(req => req.met);
+
+  return {
+    requirements,
+    requiredMet,
+    allMet,
+    score: Object.values(requirements).filter(req => req.met).length
+  };
+};
+
 // Get password strength
 export const getPasswordStrength = (password) => {
   if (!password) return 'none';
-  
-  let score = 0;
-  
-  // Length bonus
-  if (password.length >= 8) score += 1;
-  if (password.length >= 12) score += 1;
-  if (password.length >= 16) score += 1;
-  
-  // Character variety
-  if (/[a-z]/.test(password)) score += 1;
-  if (/[A-Z]/.test(password)) score += 1;
-  if (/\d/.test(password)) score += 1;
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 1;
-  
-  // Complexity bonus
-  if (password.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password)) {
-    score += 1;
-  }
-  
-  // Return strength level
-  if (score <= 2) return 'weak';
-  if (score <= 4) return 'medium';
-  if (score <= 6) return 'strong';
-  return 'very-strong';
+
+  const validation = validatePasswordRequirements(password);
+  const { score, requiredMet, allMet } = validation;
+
+  if (!requiredMet) return 'weak';
+  if (score >= 3 && score < 4) return 'medium';
+  if (score >= 4 && allMet) return 'strong';
+  return 'medium';
 };
 
 // Get password strength color
@@ -210,14 +224,32 @@ export const getPasswordStrengthColor = (strength, theme) => {
     case 'weak':
       return theme.colors.accent.secondary;
     case 'medium':
-      return theme.colors.betting.neutral;
+      return theme.colors.betting.neutral || '#FFA500';
     case 'strong':
-      return theme.colors.betting.positive;
+      return theme.colors.betting.positive || '#22C55E';
     case 'very-strong':
       return theme.colors.accent.primary;
     default:
       return theme.colors.text.muted;
   }
+};
+
+// Check if password meets minimum requirements for form submission
+export const isPasswordValid = (password) => {
+  if (!password) return false;
+  const validation = validatePasswordRequirements(password);
+  return validation.requiredMet;
+};
+
+// Get password border color based on validation
+export const getPasswordBorderColor = (password, theme) => {
+  if (!password) return theme.colors.border.secondary;
+
+  const validation = validatePasswordRequirements(password);
+  if (validation.requiredMet) {
+    return theme.colors.betting.positive || '#22C55E';
+  }
+  return theme.colors.accent.secondary || '#EF4444';
 };
 
 // Comprehensive form validation

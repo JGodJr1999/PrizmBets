@@ -416,14 +416,14 @@ const LoginPage = () => {
                 onChange={handleChange}
               />
               <CheckboxLabel htmlFor="rememberMe">
-                Keep me signed in for 30 days
+                Remember me
                 <TooltipContainer
                   onMouseEnter={() => setShowTooltip(true)}
                   onMouseLeave={() => setShowTooltip(false)}
                 >
                   <Info size={14} style={{ marginLeft: '4px', opacity: 0.7 }} />
                   <Tooltip visible={showTooltip}>
-                    Stay signed in even after closing your browser. We'll remember you for 30 days or until you sign out.
+                    Stay signed in even after closing your browser until you sign out.
                   </Tooltip>
                 </TooltipContainer>
               </CheckboxLabel>
