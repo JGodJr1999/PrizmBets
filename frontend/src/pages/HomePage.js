@@ -33,6 +33,9 @@ const Subtitle = styled.p`
   font-size: 1.25rem;
   color: #cccccc;
   margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 
   @media (max-width: 768px) {
     font-size: 1rem;
@@ -48,7 +51,7 @@ const CTAButton = styled.button`
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s ease;
 
   &:hover {
     transform: scale(1.05);
@@ -74,7 +77,7 @@ const ActionCard = styled.div`
   &:hover {
     background: #2a2a2a;
     border-color: #FFD700;
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
 `;
 
@@ -102,6 +105,7 @@ const CardTitle = styled.h3`
 const CardDescription = styled.p`
   color: #888888;
   font-size: 0.95rem;
+  line-height: 1.5;
 `;
 
 const FeaturesGrid = styled.div`
@@ -116,8 +120,13 @@ const FeatureCard = styled.div`
   background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
   border: 1px solid #444;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem;
   text-align: center;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 `;
 
 const FeatureIcon = styled.div`
@@ -134,6 +143,7 @@ const FeatureTitle = styled.h4`
 const FeatureText = styled.p`
   color: #cccccc;
   font-size: 0.9rem;
+  line-height: 1.6;
 `;
 
 const HomePage = () => {
@@ -170,17 +180,17 @@ const HomePage = () => {
     {
       icon: <Brain size={32} />,
       title: 'AI-Powered Analysis',
-      text: 'Get intelligent insights on every bet'
+      text: 'Get intelligent insights on every bet with advanced analytics'
     },
     {
       icon: <Trophy size={32} />,
-      title: 'Track Your Success',
-      text: 'Monitor your betting performance and ROI'
+      title: 'Track Your Performance',
+      text: 'Monitor your betting history and improve your strategy'
     },
     {
       icon: <Activity size={32} />,
       title: 'Real-Time Updates',
-      text: 'Live scores, odds, and betting opportunities'
+      text: 'Live scores, odds, and betting opportunities at your fingertips'
     }
   ];
 

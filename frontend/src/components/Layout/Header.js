@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Brain, BarChart3, User, Calendar, CreditCard, Menu, X, Trophy, Star, Crown, Target, DollarSign, Home, Layers } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
-import AgentNotifications from '../AgentNotifications';
+import AgentNotifications from '../Agent/AgentNotifications';
 
 const HeaderContainer = styled.header`
   background: ${props => props.theme.colors.background.primary};
@@ -401,27 +401,19 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
 
           <NavItem
-            active={isActive('/parlay')}
-            onClick={() => handleNavigation('/parlay')}
+            active={isActive('/live-sports')}
+            onClick={() => handleNavigation('/live-sports')}
           >
-            <Layers size={16} />
-            Parlay Builder
+            <DollarSign size={16} />
+            Live Odds & Parlays
           </NavItem>
 
           <NavItem
             active={isActive('/live-scores')}
             onClick={() => handleNavigation('/live-scores')}
           >
-            <DollarSign size={16} />
-            Live Odds
-          </NavItem>
-
-          <NavItem
-            active={isActive('/live-sports')}
-            onClick={() => handleNavigation('/live-sports')}
-          >
             <Trophy size={16} />
-            Live Sports
+            Live Scores
           </NavItem>
           
           <NavItem 
@@ -450,59 +442,24 @@ const Header = ({ user = null, onLogout }) => {
             <ComingSoonBadge>2026</ComingSoonBadge>
           </NavItem>
           
-          {user && (
-            <>
-              <NavItem 
-                active={isActive('/dashboard')}
-                onClick={() => handleNavigation('/dashboard')}
-              >
-                <Brain size={16} />
-                Dashboard
-              </NavItem>
-              <NavItem 
-                active={isActive('/history')}
-                onClick={() => handleNavigation('/history')}
-              >
-                <Calendar size={16} />
-                History
-              </NavItem>
-              {user.role === 'admin' && (
-                <NavItem
-                  active={isActive('/admin')}
-                  onClick={() => handleNavigation('/admin')}
-                >
-                  <Crown size={16} />
-                  Admin
-                </NavItem>
-              )}
-              <NavItem
-                active={isActive('/agents')}
-                onClick={() => handleNavigation('/agents')}
-              >
-                <Brain size={16} />
-                AI Agents
-              </NavItem>
-            </>
+          {user?.role === 'admin' && (
+            <NavItem
+              active={isActive('/admin')}
+              onClick={() => handleNavigation('/admin')}
+            >
+              <Crown size={16} />
+              Admin
+            </NavItem>
           )}
           
           {user ? (
-            <>
-              <AgentNotifications />
-              <NavItem
-                active={isActive('/account')}
-                onClick={() => handleNavigation('/account')}
-              >
-                <User size={16} />
-                Account
-              </NavItem>
-              <UserColumnMenu
-                user={user}
-                onNavigate={handleNavigation}
-                onLogout={onLogout}
-              />
-            </>
+            <UserColumnMenu
+              user={user}
+              onNavigate={handleNavigation}
+              onLogout={onLogout}
+            />
           ) : (
-            <NavItem 
+            <NavItem
               active={isActive('/login')}
               onClick={() => handleNavigation('/login')}
             >

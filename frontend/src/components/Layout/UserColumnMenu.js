@@ -10,7 +10,9 @@ import {
   History,
   ChevronDown,
   Target,
-  CreditCard
+  CreditCard,
+  Brain,
+  Bell
 } from 'lucide-react';
 
 const UserMenuContainer = styled.div`
@@ -311,6 +313,20 @@ const UserColumnMenu = ({ user, onNavigate, onLogout }) => {
               <SectionTitle>Account</SectionTitle>
               <MenuItem
                 variants={itemVariants}
+                onClick={() => handleMenuItemClick('/account')}
+                whileHover={{ x: 4 }}
+              >
+                <MenuItemIcon>
+                  <User size={18} />
+                </MenuItemIcon>
+                <MenuItemContent>
+                  <MenuItemLabel>Account Settings</MenuItemLabel>
+                  <MenuItemDescription>Manage your profile and preferences</MenuItemDescription>
+                </MenuItemContent>
+              </MenuItem>
+
+              <MenuItem
+                variants={itemVariants}
                 onClick={() => handleMenuItemClick('/profile')}
                 whileHover={{ x: 4 }}
               >
@@ -319,7 +335,7 @@ const UserColumnMenu = ({ user, onNavigate, onLogout }) => {
                 </MenuItemIcon>
                 <MenuItemContent>
                   <MenuItemLabel>Profile Settings</MenuItemLabel>
-                  <MenuItemDescription>Manage your account and preferences</MenuItemDescription>
+                  <MenuItemDescription>Update your personal information</MenuItemDescription>
                 </MenuItemContent>
               </MenuItem>
             </MenuSection>
@@ -379,6 +395,20 @@ const UserColumnMenu = ({ user, onNavigate, onLogout }) => {
                 <MenuItemContent>
                   <MenuItemLabel>Betting History</MenuItemLabel>
                   <MenuItemDescription>Review your past bets and results</MenuItemDescription>
+                </MenuItemContent>
+              </MenuItem>
+
+              <MenuItem
+                variants={itemVariants}
+                onClick={() => handleMenuItemClick('/agents')}
+                whileHover={{ x: 4 }}
+              >
+                <MenuItemIcon>
+                  <Brain size={18} />
+                </MenuItemIcon>
+                <MenuItemContent>
+                  <MenuItemLabel>AI Agents</MenuItemLabel>
+                  <MenuItemDescription>Automated betting analysis and insights</MenuItemDescription>
                 </MenuItemContent>
               </MenuItem>
             </MenuSection>

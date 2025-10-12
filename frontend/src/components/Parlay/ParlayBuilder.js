@@ -1,731 +1,432 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Plus, Trash2, DollarSign, AlertCircle, Brain, Search, RefreshCw, AlertTriangle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { DollarSign, RefreshCw, AlertCircle, Trash2, Search, Plus, AlertTriangle, Brain, Target } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import FilterBar from './FilterBar';
+import GameCard from './GameCard';
+import ParlaySlip from './ParlaySlip';
 import OddsComparison from '../Odds/OddsComparison';
 
 const BuilderContainer = styled.div`
-  background: ${props => props.theme.colors.background.card};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: ${props => props.theme.borderRadius.lg};
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: ${props => props.theme.spacing.xl};
+  max-width: 1400px;
+  margin: 0 auto;
   padding: ${props => props.theme.spacing.lg};
-  margin-bottom: ${props => props.theme.spacing.lg};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    padding: ${props => props.theme.spacing.md};
-    margin-bottom: ${props => props.theme.spacing.md};
-    border-radius: ${props => props.theme.borderRadius.md};
-  }
-  
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    padding: ${props => props.theme.spacing.sm};
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-  }
-`;
 
-const BuilderHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: between;
-  margin-bottom: ${props => props.theme.spacing.lg};
-`;
-
-const Title = styled.h2`
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 1.5rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    font-size: 1.3rem;
-  }
-  
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    font-size: 1.2rem;
-    
-    svg {
-      width: 20px;
-      height: 20px;
-    }
-  }
-`;
-
-const BetCard = styled.div`
-  background: ${props => props.theme.colors.background.secondary};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.md};
-  margin-bottom: ${props => props.theme.spacing.md};
-  position: relative;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: ${props => props.theme.colors.border.secondary};
-  }
-`;
-
-const BetRow = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr auto;
-  gap: ${props => props.theme.spacing.md};
-  align-items: center;
-  
   @media (max-width: ${props => props.theme.breakpoints.lg}) {
-    grid-template-columns: 1fr 1fr auto;
-    grid-template-areas: 
-      "team team delete"
-      "odds type delete"
-      "amount sportsbook delete";
-  }
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
     grid-template-columns: 1fr;
-    grid-template-areas: 
-      "team"
-      "odds"
-      "type"
-      "amount"
-      "sportsbook"
-      "delete";
-    gap: ${props => props.theme.spacing.sm};
+    gap: ${props => props.theme.spacing.lg};
   }
 `;
 
-const MobileInputRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${props => props.theme.spacing.sm};
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const InputGroup = styled.div`
+const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${props => props.theme.spacing.xs};
+  gap: ${props => props.theme.spacing.lg};
 `;
 
-const Label = styled.label`
+const GamesGrid = styled.div`
+  display: grid;
+  gap: ${props => props.theme.spacing.lg};
+`;
+
+const LoadingState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${props => props.theme.spacing.xxl};
   color: ${props => props.theme.colors.text.secondary};
-  font-size: 0.85rem;
-  font-weight: 500;
-`;
 
-const Input = styled.input`
-  background: ${props => props.theme.colors.background.primary};
-  border: 1px solid ${props => props.theme.colors.border.secondary};
-  border-radius: ${props => props.theme.borderRadius.sm};
-  padding: ${props => props.theme.spacing.sm};
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 0.9rem;
-  
-  &:focus {
-    border-color: ${props => props.theme.colors.accent.primary};
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.accent.primary}20;
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid ${props => props.theme.colors.border.primary};
+    border-top: 3px solid ${props => props.theme.colors.accent.primary};
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: ${props => props.theme.spacing.md};
   }
-  
-  &::placeholder {
-    color: ${props => props.theme.colors.text.muted};
-  }
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    padding: ${props => props.theme.spacing.md};
-    font-size: 1rem;
-    min-height: 44px; /* iOS touch target minimum */
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 `;
 
-const Select = styled.select`
-  background: ${props => props.theme.colors.background.primary};
-  border: 1px solid ${props => props.theme.colors.border.secondary};
-  border-radius: ${props => props.theme.borderRadius.sm};
-  padding: ${props => props.theme.spacing.sm};
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 0.9rem;
-  cursor: pointer;
-  
-  &:focus {
-    border-color: ${props => props.theme.colors.accent.primary};
-    box-shadow: 0 0 0 2px ${props => props.theme.colors.accent.primary}20;
-  }
-  
-  option {
-    background: ${props => props.theme.colors.background.primary};
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${props => props.theme.spacing.xxl};
+  text-align: center;
+  color: ${props => props.theme.colors.text.secondary};
+
+  h3 {
     color: ${props => props.theme.colors.text.primary};
+    margin-bottom: ${props => props.theme.spacing.md};
   }
-  
-  @media (max-width: ${props => props.theme.breakpoints.md}) {
-    padding: ${props => props.theme.spacing.md};
-    font-size: 1rem;
-    min-height: 44px; /* iOS touch target minimum */
+
+  p {
+    margin-bottom: ${props => props.theme.spacing.lg};
+    max-width: 400px;
   }
-`;
-
-const DeleteButton = styled.button`
-  background: ${props => props.theme.colors.accent.secondary};
-  border: none;
-  border-radius: ${props => props.theme.borderRadius.sm};
-  padding: ${props => props.theme.spacing.sm};
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: ${props => props.theme.colors.accent.secondary}dd;
-    transform: scale(1.05);
-  }
-`;
-
-const AddButton = styled.button`
-  background: ${props => props.theme.colors.accent.primary};
-  border: none;
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.md};
-  color: ${props => props.theme.colors.background.primary};
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  margin: ${props => props.theme.spacing.md} 0;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: ${props => props.theme.colors.accent.primary}dd;
-    transform: translateY(-1px);
-  }
-`;
-
-const TotalSection = styled.div`
-  background: ${props => props.theme.colors.background.tertiary};
-  border: 1px solid ${props => props.theme.colors.border.accent};
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.lg};
-  margin-top: ${props => props.theme.spacing.lg};
-`;
-
-const TotalRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: ${props => props.theme.spacing.sm};
-`;
-
-const EvaluateButton = styled.button`
-  background: linear-gradient(135deg, ${props => props.theme.colors.accent.primary}, ${props => props.theme.colors.accent.primary}dd);
-  border: none;
-  border-radius: ${props => props.theme.borderRadius.md};
-  padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.xl};
-  color: ${props => props.theme.colors.background.primary};
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  margin-top: ${props => props.theme.spacing.md};
-  width: 100%;
-  justify-content: center;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.shadows.glow};
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  background: ${props => props.theme.colors.accent.secondary}20;
-  border: 1px solid ${props => props.theme.colors.accent.secondary};
-  border-radius: ${props => props.theme.borderRadius.sm};
-  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
-  color: ${props => props.theme.colors.accent.secondary};
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.xs};
-  margin-top: ${props => props.theme.spacing.sm};
-`;
-
-const FindOddsButton = styled.button`
-  background: ${props => props.theme.colors.accent.primary}20;
-  border: 1px solid ${props => props.theme.colors.accent.primary};
-  border-radius: ${props => props.theme.borderRadius.sm};
-  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
-  color: ${props => props.theme.colors.accent.primary};
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.xs};
-  transition: all 0.2s ease;
-  margin-top: ${props => props.theme.spacing.xs};
-  
-  &:hover {
-    background: ${props => props.theme.colors.accent.primary}30;
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const OddsComparisonSection = styled.div`
-  margin-top: ${props => props.theme.spacing.lg};
 `;
 
 const ParlayBuilder = ({ onEvaluate, isLoading }) => {
-  const [bets, setBets] = useState([
+  const [selectedBets, setSelectedBets] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSport, setSelectedSport] = useState('all');
+  const [selectedDate, setSelectedDate] = useState('today');
+  const [quickFilters, setQuickFilters] = useState({
+    featured: false,
+    live: false,
+    popular: false,
+    best_odds: false
+  });
+  const [games, setGames] = useState([]);
+  const [isLoadingGames, setIsLoadingGames] = useState(true);
+
+  // Mock games data - replace with real API call
+  const mockGames = [
     {
-      id: 1,
-      team: '',
-      odds: '',
-      bet_type: 'moneyline',
-      amount: '',
-      sportsbook: ''
+      id: '1',
+      homeTeam: {
+        name: 'Lakers',
+        logo: '🏀',
+        record: '28-15',
+        rank: 7
+      },
+      awayTeam: {
+        name: 'Warriors',
+        logo: '🏀',
+        record: '25-18',
+        rank: 10
+      },
+      sport: 'basketball',
+      league: 'NBA',
+      gameTime: '2024-01-15T20:00:00Z',
+      isLive: false,
+      quarter: null,
+      timeRemaining: null,
+      homeScore: null,
+      awayScore: null,
+      bets: {
+        moneyline: {
+          home: { odds: -150, sportsbook: 'DraftKings' },
+          away: { odds: +130, sportsbook: 'DraftKings' }
+        },
+        spread: {
+          home: { odds: -110, line: -3.5, sportsbook: 'FanDuel' },
+          away: { odds: -110, line: +3.5, sportsbook: 'FanDuel' }
+        },
+        total: {
+          over: { odds: -105, line: 225.5, sportsbook: 'BetMGM' },
+          under: { odds: -115, line: 225.5, sportsbook: 'BetMGM' }
+        }
+      },
+      playerProps: [
+        {
+          player: 'LeBron James',
+          type: 'Points',
+          line: 28.5,
+          over: { odds: -110, sportsbook: 'DraftKings' },
+          under: { odds: -110, sportsbook: 'DraftKings' }
+        },
+        {
+          player: 'Stephen Curry',
+          type: 'Points',
+          line: 26.5,
+          over: { odds: -115, sportsbook: 'FanDuel' },
+          under: { odds: -105, sportsbook: 'FanDuel' }
+        }
+      ],
+      featured: true,
+      popular: true
+    },
+    {
+      id: '2',
+      homeTeam: {
+        name: 'Chiefs',
+        logo: '🏈',
+        record: '14-3',
+        rank: 1
+      },
+      awayTeam: {
+        name: 'Bills',
+        logo: '🏈',
+        record: '13-4',
+        rank: 2
+      },
+      sport: 'football',
+      league: 'NFL',
+      gameTime: '2024-01-15T18:00:00Z',
+      isLive: true,
+      quarter: '2nd',
+      timeRemaining: '8:42',
+      homeScore: 14,
+      awayScore: 10,
+      bets: {
+        moneyline: {
+          home: { odds: -180, sportsbook: 'BetMGM' },
+          away: { odds: +150, sportsbook: 'BetMGM' }
+        },
+        spread: {
+          home: { odds: -110, line: -4.5, sportsbook: 'Caesars' },
+          away: { odds: -110, line: +4.5, sportsbook: 'Caesars' }
+        },
+        total: {
+          over: { odds: -110, line: 47.5, sportsbook: 'DraftKings' },
+          under: { odds: -110, line: 47.5, sportsbook: 'DraftKings' }
+        }
+      },
+      playerProps: [
+        {
+          player: 'Patrick Mahomes',
+          type: 'Passing Yards',
+          line: 285.5,
+          over: { odds: -105, sportsbook: 'FanDuel' },
+          under: { odds: -115, sportsbook: 'FanDuel' }
+        },
+        {
+          player: 'Josh Allen',
+          type: 'Passing Yards',
+          line: 275.5,
+          over: { odds: -110, sportsbook: 'DraftKings' },
+          under: { odds: -110, sportsbook: 'DraftKings' }
+        }
+      ],
+      featured: true,
+      live: true,
+      popular: true
+    },
+    {
+      id: '3',
+      homeTeam: {
+        name: 'Bruins',
+        logo: '🏒',
+        record: '30-10-8',
+        rank: 3
+      },
+      awayTeam: {
+        name: 'Rangers',
+        logo: '🏒',
+        record: '28-12-6',
+        rank: 5
+      },
+      sport: 'hockey',
+      league: 'NHL',
+      gameTime: '2024-01-15T19:30:00Z',
+      isLive: false,
+      quarter: null,
+      timeRemaining: null,
+      homeScore: null,
+      awayScore: null,
+      bets: {
+        moneyline: {
+          home: { odds: -120, sportsbook: 'FanDuel' },
+          away: { odds: +100, sportsbook: 'FanDuel' }
+        },
+        spread: {
+          home: { odds: -110, line: -1.5, sportsbook: 'BetMGM' },
+          away: { odds: -110, line: +1.5, sportsbook: 'BetMGM' }
+        },
+        total: {
+          over: { odds: -105, line: 6.5, sportsbook: 'Caesars' },
+          under: { odds: -115, line: 6.5, sportsbook: 'Caesars' }
+        }
+      },
+      playerProps: [
+        {
+          player: 'David Pastrnak',
+          type: 'Goals',
+          line: 0.5,
+          over: { odds: +180, sportsbook: 'DraftKings' },
+          under: { odds: -220, sportsbook: 'DraftKings' }
+        }
+      ],
+      popular: true
     }
-  ]);
-  const [totalAmount, setTotalAmount] = useState('');
-  const [userNotes, setUserNotes] = useState('');
-  const [errors, setErrors] = useState({});
-  const [showOddsComparison, setShowOddsComparison] = useState(null);
-  const [selectedSport, setSelectedSport] = useState('nfl');
-  const [availableSports, setAvailableSports] = useState([]);
-  const [sportsLoading, setSportsLoading] = useState(true);
-
-  const betTypes = [
-    { value: 'moneyline', label: 'Moneyline' },
-    { value: 'spread', label: 'Spread' },
-    { value: 'over_under', label: 'Over/Under' },
-    { value: 'prop', label: 'Prop Bet' }
   ];
 
-  const sportsbooks = [
-    { value: '', label: 'Select Sportsbook' },
-    { value: 'draftkings', label: 'DraftKings' },
-    { value: 'fanduel', label: 'FanDuel' },
-    { value: 'betmgm', label: 'BetMGM' },
-    { value: 'caesars', label: 'Caesars' },
-    { value: 'betrivers', label: 'BetRivers' },
-    { value: 'circa', label: 'Circa Sports' },
-    { value: 'espnbet', label: 'ESPN BET' },
-    { value: 'fanatics', label: 'Fanatics Sportsbook' },
-    { value: 'betway', label: 'Betway' },
-    { value: 'pointsbet', label: 'PointsBet' },
-    { value: 'hard_rock', label: 'Hard Rock Bet' },
-    { value: 'prizepicks', label: 'PrizePicks (Daily Fantasy)' },
-    { value: 'underdog', label: 'Underdog Fantasy' },
-    { value: 'parlayplay', label: 'ParlayPlay' },
-    { value: 'superdraft', label: 'SuperDraft' }
+  const availableSports = [
+    { value: 'all', label: 'All Sports', active: true },
+    { value: 'football', label: 'NFL', active: true },
+    { value: 'basketball', label: 'NBA', active: true },
+    { value: 'hockey', label: 'NHL', active: true },
+    { value: 'baseball', label: 'MLB', active: false },
+    { value: 'soccer', label: 'Soccer', active: true }
   ];
 
-  // Load available sports from our enhanced API
+  // Load games on component mount
   useEffect(() => {
-    loadAvailableSports();
+    const loadGames = async () => {
+      setIsLoadingGames(true);
+      try {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setGames(mockGames);
+      } catch (error) {
+        console.error('Failed to load games:', error);
+      } finally {
+        setIsLoadingGames(false);
+      }
+    };
+
+    loadGames();
   }, []);
 
-  const loadAvailableSports = async () => {
-    try {
-      setSportsLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/odds/sports`);
-      const data = await response.json();
-      
-      if (data.success) {
-        // Convert API format to dropdown format
-        const sportsOptions = data.sports.map(sport => ({
-          value: sport.key,
-          label: sport.name,
-          active: sport.active,
-          season_status: sport.season_status
-        }));
-        
-        setAvailableSports(sportsOptions);
-        
-        // Set first active sport as default if current selection isn't available
-        const activeSports = sportsOptions.filter(s => s.active);
-        if (activeSports.length > 0 && !activeSports.find(s => s.value === selectedSport)) {
-          setSelectedSport(activeSports[0].value);
-        }
-      } else {
-        // Fallback to basic sports list without showing error
-        setAvailableSports([
-          { value: 'nfl', label: 'NFL', active: true, season_status: 'active' },
-          { value: 'nba', label: 'NBA', active: true, season_status: 'active' },
-          { value: 'mlb', label: 'MLB', active: true, season_status: 'active' },
-          { value: 'nhl', label: 'NHL', active: true, season_status: 'active' }
-        ]);
-        console.log('Using fallback sports list - API returned unsuccessful response');
+  // Filter games based on current filters
+  const filteredGames = games.filter(game => {
+    // Sport filter
+    if (selectedSport !== 'all' && game.sport !== selectedSport) {
+      return false;
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const searchableText = [
+        game.homeTeam.name,
+        game.awayTeam.name,
+        game.league,
+        ...game.playerProps.map(prop => prop.player)
+      ].join(' ').toLowerCase();
+
+      if (!searchableText.includes(query)) {
+        return false;
       }
-    } catch (error) {
-      console.error('Failed to load sports:', error);
-      // Fallback to basic sports list without showing error toast
-      setAvailableSports([
-        { value: 'nfl', label: 'NFL', active: true, season_status: 'active' },
-        { value: 'nba', label: 'NBA', active: true, season_status: 'active' },
-        { value: 'mlb', label: 'MLB', active: true, season_status: 'active' },
-        { value: 'nhl', label: 'NHL', active: true, season_status: 'active' }
-      ]);
-      console.log('Using fallback sports list - API request failed');
-    } finally {
-      setSportsLoading(false);
+    }
+
+    // Date filter
+    const gameDate = new Date(game.gameTime);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (selectedDate === 'today') {
+      if (gameDate.toDateString() !== today.toDateString()) {
+        return false;
+      }
+    } else if (selectedDate === 'tomorrow') {
+      if (gameDate.toDateString() !== tomorrow.toDateString()) {
+        return false;
+      }
+    }
+
+    // Quick filters
+    if (quickFilters.featured && !game.featured) return false;
+    if (quickFilters.live && !game.isLive) return false;
+    if (quickFilters.popular && !game.popular) return false;
+
+    return true;
+  });
+
+  const handleBetSelection = (bet) => {
+    const existingBetIndex = selectedBets.findIndex(
+      existing => existing.id === bet.id
+    );
+
+    if (existingBetIndex >= 0) {
+      // Remove bet if already selected
+      setSelectedBets(prev => prev.filter((_, index) => index !== existingBetIndex));
+    } else {
+      // Add new bet
+      setSelectedBets(prev => [...prev, bet]);
     }
   };
 
-  const addBet = () => {
-    if (bets.length >= 10) {
-      toast.error('Maximum 10 bets allowed per parlay');
+  const handleQuickFilterChange = (filterKey, value) => {
+    setQuickFilters(prev => ({
+      ...prev,
+      [filterKey]: value
+    }));
+  };
+
+  // Handle parlay evaluation with the new format
+  const handleEvaluateParlay = () => {
+    if (selectedBets.length === 0) {
       return;
     }
-    
-    const newBet = {
-      id: Date.now(),
-      team: '',
-      odds: '',
-      bet_type: 'moneyline',
-      amount: '',
-      sportsbook: ''
-    };
-    setBets([...bets, newBet]);
-  };
 
-  const removeBet = (id) => {
-    if (bets.length <= 1) {
-      toast.error('At least one bet is required');
-      return;
-    }
-    setBets(bets.filter(bet => bet.id !== id));
-  };
-
-  const updateBet = (id, field, value) => {
-    setBets(bets.map(bet => 
-      bet.id === id ? { ...bet, [field]: value } : bet
-    ));
-    
-    // Clear error for this field
-    if (errors[`bet_${id}_${field}`]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[`bet_${id}_${field}`];
-        return newErrors;
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    // Validate each bet
-    bets.forEach(bet => {
-      if (!bet.team.trim()) {
-        newErrors[`bet_${bet.id}_team`] = 'Team name is required';
-      }
-      if (!bet.odds || isNaN(bet.odds)) {
-        newErrors[`bet_${bet.id}_odds`] = 'Valid odds are required';
-      }
-      if (!bet.amount || isNaN(bet.amount) || parseFloat(bet.amount) <= 0) {
-        newErrors[`bet_${bet.id}_amount`] = 'Valid amount is required';
-      }
-    });
-    
-    // Validate total amount
-    if (!totalAmount || isNaN(totalAmount) || parseFloat(totalAmount) <= 0) {
-      newErrors.totalAmount = 'Valid total amount is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleEvaluate = () => {
-    if (!validateForm()) {
-      toast.error('Please fix the errors before evaluating');
-      return;
-    }
-    
+    // Convert new format to old format for backend compatibility
     const parlayData = {
-      bets: bets.map(bet => ({
-        team: bet.team.trim(),
-        odds: parseFloat(bet.odds),
-        bet_type: bet.bet_type,
-        amount: parseFloat(bet.amount),
-        sportsbook: bet.sportsbook || undefined
+      bets: selectedBets.map(bet => ({
+        team: bet.team,
+        odds: bet.odds,
+        bet_type: bet.betType,
+        amount: bet.amount || 25, // Default amount if not specified
+        sportsbook: bet.sportsbook
       })),
-      total_amount: parseFloat(totalAmount),
-      user_notes: userNotes.trim() || undefined
+      total_amount: selectedBets.reduce((sum, bet) => sum + (bet.amount || 25), 0),
+      user_notes: ''
     };
-    
+
     onEvaluate(parlayData);
   };
 
-  const handleFindBestOdds = (betId) => {
-    const bet = bets.find(b => b.id === betId);
-    
-    if (!bet.team.trim()) {
-      toast.error('Please enter a team name first');
-      return;
-    }
-    
-    if (showOddsComparison === betId) {
-      setShowOddsComparison(null);
-    } else {
-      setShowOddsComparison(betId);
-    }
-  };
-
-  const totalBetAmount = bets.reduce((sum, bet) => sum + (parseFloat(bet.amount) || 0), 0);
+  const gameCount = filteredGames.length;
+  const totalMarkets = filteredGames.reduce((sum, game) => {
+    return sum + 3 + game.playerProps.length; // moneyline, spread, total + player props
+  }, 0);
 
   return (
     <BuilderContainer>
-      <BuilderHeader>
-        <Title>
-          <DollarSign size={24} />
-          Build Your Parlay
-        </Title>
-      </BuilderHeader>
-      
-      <InputGroup style={{ marginBottom: '1rem' }}>
-        <Label>
-          Sport 
-          {!sportsLoading && (
-            <button 
-              onClick={loadAvailableSports}
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                marginLeft: '8px',
-                cursor: 'pointer',
-                color: '#00d4aa',
-                display: 'inline-flex',
-                alignItems: 'center'
-              }}
-              title="Refresh sports list"
-            >
-              <RefreshCw size={14} />
-            </button>
-          )}
-        </Label>
-        <Select
-          value={selectedSport}
-          onChange={(e) => setSelectedSport(e.target.value)}
-          disabled={sportsLoading}
-        >
-          {sportsLoading ? (
-            <option>Loading sports...</option>
-          ) : (
-            availableSports.map(sport => (
-              <option 
-                key={sport.value} 
-                value={sport.value}
-                disabled={!sport.active}
-              >
-                {sport.label} {!sport.active ? `(${sport.season_status})` : ''}
-              </option>
-            ))
-          )}
-        </Select>
-        {!sportsLoading && availableSports.length > 0 && (
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: '#a0a0a0', 
-            marginTop: '4px' 
-          }}>
-            {availableSports.length} sports available • Active sports have real-time odds
-          </div>
+      <MainContent>
+        <FilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedSport={selectedSport}
+          onSportChange={setSelectedSport}
+          availableSports={availableSports}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          quickFilters={quickFilters}
+          onQuickFilterChange={handleQuickFilterChange}
+          gameCount={gameCount}
+          totalMarkets={totalMarkets}
+        />
+
+        {isLoadingGames ? (
+          <LoadingState>
+            <div className="spinner" />
+            <h3>Loading Games</h3>
+            <p>Finding the best betting opportunities...</p>
+          </LoadingState>
+        ) : filteredGames.length === 0 ? (
+          <EmptyState>
+            <Target size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+            <h3>No Games Found</h3>
+            <p>
+              Try adjusting your filters or search terms to find more betting opportunities.
+            </p>
+          </EmptyState>
+        ) : (
+          <GamesGrid>
+            {filteredGames.map(game => (
+              <GameCard
+                key={game.id}
+                game={game}
+                onBetSelect={handleBetSelection}
+                selectedBets={selectedBets}
+              />
+            ))}
+          </GamesGrid>
         )}
-      </InputGroup>
-      
-      {bets.map((bet, index) => (
-        <BetCard key={bet.id}>
-          <BetRow>
-            <InputGroup>
-              <Label>Team/Player</Label>
-              <Input
-                type="text"
-                placeholder="e.g., Lakers, Patrick Mahomes"
-                value={bet.team}
-                onChange={(e) => updateBet(bet.id, 'team', e.target.value)}
-              />
-              {errors[`bet_${bet.id}_team`] && (
-                <ErrorMessage>
-                  <AlertCircle size={16} />
-                  {errors[`bet_${bet.id}_team`]}
-                </ErrorMessage>
-              )}
-            </InputGroup>
-            
-            <InputGroup>
-              <Label>Odds</Label>
-              <Input
-                type="number"
-                placeholder="-110"
-                value={bet.odds}
-                onChange={(e) => updateBet(bet.id, 'odds', e.target.value)}
-              />
-              {errors[`bet_${bet.id}_odds`] && (
-                <ErrorMessage>
-                  <AlertCircle size={16} />
-                  {errors[`bet_${bet.id}_odds`]}
-                </ErrorMessage>
-              )}
-            </InputGroup>
-            
-            <InputGroup>
-              <Label>Bet Type</Label>
-              <Select
-                value={bet.bet_type}
-                onChange={(e) => updateBet(bet.id, 'bet_type', e.target.value)}
-              >
-                {betTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </Select>
-            </InputGroup>
-            
-            <InputGroup>
-              <Label>Amount ($)</Label>
-              <Input
-                type="number"
-                placeholder="25.00"
-                step="0.01"
-                min="0.01"
-                value={bet.amount}
-                onChange={(e) => updateBet(bet.id, 'amount', e.target.value)}
-              />
-              {errors[`bet_${bet.id}_amount`] && (
-                <ErrorMessage>
-                  <AlertCircle size={16} />
-                  {errors[`bet_${bet.id}_amount`]}
-                </ErrorMessage>
-              )}
-            </InputGroup>
-            
-            <DeleteButton onClick={() => removeBet(bet.id)}>
-              <Trash2 size={16} />
-            </DeleteButton>
-          </BetRow>
-          
-          <InputGroup style={{ marginTop: '1rem' }}>
-            <Label>Sportsbook (Optional)</Label>
-            <Select
-              value={bet.sportsbook}
-              onChange={(e) => updateBet(bet.id, 'sportsbook', e.target.value)}
-            >
-              {sportsbooks.map(book => (
-                <option key={book.value} value={book.value}>
-                  {book.label}
-                </option>
-              ))}
-            </Select>
-          </InputGroup>
-          
-          <FindOddsButton 
-            onClick={() => handleFindBestOdds(bet.id)}
-            disabled={!bet.team.trim()}
-          >
-            <Search size={16} />
-            {showOddsComparison === bet.id ? 'Hide Odds' : 'Find Best Odds'}
-          </FindOddsButton>
-          
-          {showOddsComparison === bet.id && (
-            <OddsComparisonSection>
-              <OddsComparison 
-                team={bet.team}
-                betType={bet.bet_type}
-                sport={selectedSport}
-                amount={parseFloat(bet.amount) || 100}
-              />
-            </OddsComparisonSection>
-          )}
-        </BetCard>
-      ))}
-      
-      <AddButton onClick={addBet}>
-        <Plus size={16} />
-        Add Another Bet
-      </AddButton>
-      
-      <TotalSection>
-        <InputGroup>
-          <Label>Total Parlay Amount ($)</Label>
-          <Input
-            type="number"
-            placeholder="100.00"
-            step="0.01"
-            min="0.01"
-            value={totalAmount}
-            onChange={(e) => setTotalAmount(e.target.value)}
-          />
-          {errors.totalAmount && (
-            <ErrorMessage>
-              <AlertCircle size={16} />
-              {errors.totalAmount}
-            </ErrorMessage>
-          )}
-        </InputGroup>
-        
-        <InputGroup style={{ marginTop: '1rem' }}>
-          <Label>Notes (Optional)</Label>
-          <Input
-            type="text"
-            placeholder="Any additional notes or strategy..."
-            value={userNotes}
-            onChange={(e) => setUserNotes(e.target.value)}
-            maxLength={500}
-          />
-        </InputGroup>
-        
-        <TotalRow>
-          <span>Individual Bets Total: ${totalBetAmount.toFixed(2)}</span>
-          <span>Parlay Total: ${parseFloat(totalAmount || 0).toFixed(2)}</span>
-        </TotalRow>
-        
-        <div style={{ 
-          background: '#ff8c4220', 
-          border: '1px solid #ff8c42', 
-          borderRadius: '8px', 
-          padding: '12px', 
-          margin: '16px 0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontSize: '0.85rem',
-          color: '#ff8c42'
-        }}>
-          <AlertTriangle size={16} />
-          <div>
-            <strong>⚠️ For informational purposes only.</strong> This analysis is not gambling advice. 
-            PrizmBets does not place bets or guarantee outcomes.
-          </div>
-        </div>
-        
-        <EvaluateButton 
-          onClick={handleEvaluate} 
-          disabled={isLoading}
-        >
-          <Brain size={20} />
-          {isLoading ? 'Analyzing...' : 'Evaluate with AI'}
-        </EvaluateButton>
-      </TotalSection>
+      </MainContent>
+
+      <ParlaySlip
+        selectedBets={selectedBets}
+        onRemoveBet={(betId) => {
+          setSelectedBets(prev => prev.filter(bet => bet.id !== betId));
+        }}
+        onClearAll={() => setSelectedBets([])}
+        onEvaluate={handleEvaluateParlay}
+        isLoading={isLoading}
+      />
     </BuilderContainer>
   );
 };

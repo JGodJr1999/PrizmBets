@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Shield, Lock, Eye, EyeOff, Smartphone, Key, AlertTriangle, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { settingsService } from '../../services/settingsService';
 
 const SecurityContainer = styled.div`
   display: flex;
@@ -239,7 +240,33 @@ const SecuritySettings = ({ user }) => {
   });
   
   const [isLoading, setIsLoading] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false); // TODO: Get from user data
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+
+  // Load existing security settings on component mount
+  useEffect(() => {
+    const loadSecuritySettings = async () => {
+      try {
+        setIsLoadingSettings(true);
+        const savedSettings = await settingsService.getSettingsSection('security');
+
+        if (savedSettings) {
+          setTwoFactorEnabled(savedSettings.twoFactorEnabled || false);
+        }
+      } catch (error) {
+        console.error('Failed to load security settings:', error);
+        toast.error('Failed to load security settings');
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    if (user) {
+      loadSecuritySettings();
+    } else {
+      setIsLoadingSettings(false);
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -305,18 +332,47 @@ const SecuritySettings = ({ user }) => {
 
   const handleToggle2FA = async () => {
     try {
-      // TODO: Implement 2FA toggle
-      setTwoFactorEnabled(!twoFactorEnabled);
-      toast.success(twoFactorEnabled ? 
-        'Two-factor authentication disabled' : 
+      const newTwoFactorEnabled = !twoFactorEnabled;
+
+      // Save to Firestore
+      await settingsService.updateSecuritySettings({
+        twoFactorEnabled: newTwoFactorEnabled,
+        lastPasswordChange: new Date().toISOString()
+      });
+
+      setTwoFactorEnabled(newTwoFactorEnabled);
+      toast.success(twoFactorEnabled ?
+        'Two-factor authentication disabled' :
         'Two-factor authentication enabled'
       );
+      console.log('Security settings saved:', { twoFactorEnabled: newTwoFactorEnabled });
     } catch (error) {
+      console.error('Error saving security settings:', error);
       toast.error('Failed to update two-factor authentication');
     }
   };
 
   const passwordStrength = getPasswordStrength(passwordForm.newPassword);
+
+  if (isLoadingSettings) {
+    return (
+      <SecurityContainer>
+        <SectionTitle>
+          <Shield size={24} />
+          Security Settings
+        </SectionTitle>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '2rem',
+          color: '#666'
+        }}>
+          Loading settings...
+        </div>
+      </SecurityContainer>
+    );
+  }
 
   return (
     <SecurityContainer>

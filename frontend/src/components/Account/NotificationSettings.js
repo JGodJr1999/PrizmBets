@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Bell, Mail, Smartphone, TrendingUp, AlertCircle, Settings, Volume2, VolumeX } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { settingsService } from '../../services/settingsService';
 
 const NotificationContainer = styled.div`
   display: flex;
@@ -249,8 +250,34 @@ const NotificationSettings = ({ user }) => {
       enabled: true
     }
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  // Load existing notification settings on component mount
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      try {
+        setIsLoadingSettings(true);
+        const savedNotifications = await settingsService.getSettingsSection('notifications');
+
+        if (savedNotifications) {
+          setNotifications(savedNotifications);
+        }
+      } catch (error) {
+        console.error('Failed to load notification settings:', error);
+        toast.error('Failed to load notification settings');
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    if (user) {
+      loadNotificationSettings();
+    } else {
+      setIsLoadingSettings(false);
+    }
+  }, [user]);
 
   const handleToggleNotification = (type, category, subType = null) => {
     setNotifications(prev => ({
@@ -283,17 +310,40 @@ const NotificationSettings = ({ user }) => {
 
   const handleSaveSettings = async () => {
     setIsLoading(true);
-    
+
     try {
-      // TODO: Implement API call to save notification settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save notification settings to Firestore
+      await settingsService.updateNotificationSettings(notifications);
+
       toast.success('Notification settings updated successfully!');
+      console.log('Notification settings saved:', notifications);
     } catch (error) {
+      console.error('Error saving notification settings:', error);
       toast.error('Failed to update settings. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isLoadingSettings) {
+    return (
+      <NotificationContainer>
+        <SectionTitle>
+          <Bell size={24} />
+          Notification Settings
+        </SectionTitle>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '2rem',
+          color: '#666'
+        }}>
+          Loading settings...
+        </div>
+      </NotificationContainer>
+    );
+  }
 
   return (
     <NotificationContainer>

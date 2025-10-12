@@ -66,6 +66,7 @@ temp/
 *_secret.json
 *.pem
 *.key
+*firebase*key*.json
 
 # Python
 *.py[cod]

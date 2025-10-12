@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Camera, Save, User, Mail, Calendar, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { settingsService } from '../../services/settingsService';
 
 const ProfileContainer = styled.div`
   display: flex;
@@ -183,14 +184,52 @@ const SaveButton = styled.button`
 `;
 
 const ProfileSettings = ({ user }) => {
+  console.log('=== ProfileSettings component rendering ===');
+  console.log('User prop:', user);
+
   const [formData, setFormData] = useState({
     displayName: user?.displayName || user?.name || '',
     email: user?.email || '',
     location: user?.location || '',
     joinedDate: user?.createdAt || user?.joinedDate || new Date().toLocaleDateString(),
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  // Load existing settings on component mount
+  useEffect(() => {
+    console.log('=== useEffect triggered ===');
+    console.log('User in useEffect:', user);
+
+    const loadSettings = async () => {
+      try {
+        setIsLoadingSettings(true);
+        const profileSettings = user?.uid ?
+          await settingsService.getUserSettingsForUser(user.uid).then(settings => settings.profile) :
+          await settingsService.getSettingsSection('profile');
+
+        // Update form data with saved settings, fallback to user data if available
+        setFormData(prevData => ({
+          displayName: profileSettings.displayName || user?.displayName || user?.name || '',
+          email: user?.email || '', // Email should come from auth, not settings
+          location: profileSettings.location || user?.location || '',
+          joinedDate: user?.createdAt || user?.joinedDate || new Date().toLocaleDateString(),
+        }));
+      } catch (error) {
+        console.error('Failed to load profile settings:', error);
+        toast.error('Failed to load saved settings');
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    if (user) {
+      loadSettings();
+    } else {
+      setIsLoadingSettings(false);
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -203,12 +242,28 @@ const ProfileSettings = ({ user }) => {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
+    console.log('Starting profile save process...');
+    console.log('Current user from props:', user);
+
     try {
-      // TODO: Implement API call to update profile
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Prepare profile data for saving
+      const profileData = {
+        displayName: formData.displayName.trim(),
+        location: formData.location.trim(),
+        lastUpdated: new Date().toISOString()
+      };
+
+      console.log('Profile data to save:', profileData);
+
+      // Save to Firestore using the settings service with user ID
+      await settingsService.updateProfileSettings(profileData, user?.uid);
+
       toast.success('Profile updated successfully!');
+      console.log('Profile settings saved successfully:', profileData);
     } catch (error) {
+      console.error('Error saving profile:', error);
+      console.error('Error details:', error.message);
       toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);
@@ -229,6 +284,26 @@ const ProfileSettings = ({ user }) => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  if (isLoadingSettings) {
+    return (
+      <ProfileContainer>
+        <SectionTitle>
+          <User size={24} />
+          Profile Information
+        </SectionTitle>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '2rem',
+          color: '#666'
+        }}>
+          Loading settings...
+        </div>
+      </ProfileContainer>
+    );
+  }
 
   return (
     <ProfileContainer>

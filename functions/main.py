@@ -3,8 +3,8 @@
 
 from firebase_functions import https_fn, options
 from firebase_functions.options import set_global_options
-from firebase_admin import initialize_app
-from flask import Flask, request, jsonify
+from firebase_admin import initialize_app, auth
+from flask import Flask, request, jsonify, Request
 from flask_cors import CORS
 import requests
 import json
@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 import pytz
 from dotenv import load_dotenv
 from marshmallow import Schema, fields, validate, ValidationError
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +31,34 @@ def get_firebase_app():
     if firebase_app is None:
         firebase_app = initialize_app()
     return firebase_app
+
+# ---------- AUTH HELPERS ----------
+def require_firebase_user(req: Request):
+    """Checks for a Firebase user ID token (used for browser/user calls)."""
+    auth_header = req.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1]
+    try:
+        claims = auth.verify_id_token(token)
+        return claims  # includes uid, email, etc.
+    except Exception:
+        return None
+
+def require_service_account(req, expected_audience: str):
+    """Checks for a valid Google OIDC service account token (used for backend calls)."""
+    auth_header = req.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1]
+    try:
+        claims = id_token.verify_oauth2_token(token, google_requests.Request(), expected_audience)
+        if claims.get("email") != "agent-api-access@smartbets-5c06f.iam.gserviceaccount.com":
+            return None
+        return claims
+    except Exception:
+        return None
+# ---------- END AUTH HELPERS ----------
 
 # Set global options for cost control and performance
 set_global_options(
@@ -624,13 +654,13 @@ def api_evaluate(req: https_fn.Request) -> https_fn.Response:
             }
         )
     
-    # Verify authentication
-    user_id, auth_error = verify_jwt_token(req)
-    if auth_error:
+    # Verify Firebase authentication
+    user = require_firebase_user(req)
+    if not user:
         return https_fn.Response(
             json.dumps({
                 'error': 'Authentication required',
-                'message': sanitize_error_message(auth_error),
+                'message': 'Please sign in to use parlay evaluation',
                 'code': 'AUTH_REQUIRED'
             }),
             status=401,
@@ -640,6 +670,8 @@ def api_evaluate(req: https_fn.Request) -> https_fn.Response:
                 **get_security_headers()
             }
         )
+
+    user_id = user.get('uid')
     
     # Check rate limiting with user-based limits
     allowed, rate_info = check_rate_limit(req, 30, user_id)  # Lower limit for parlay evaluations
@@ -1411,6 +1443,508 @@ try:
             return "ERROR"
 except ImportError:
     print("Scheduler functions not available")
+
+# ===============================
+# AGENT SYSTEM INTEGRATION
+# ===============================
+
+# Global agent manager instance
+agent_manager_instance = None
+agent_dashboard_instance = None
+
+def get_agent_manager():
+    """Get or initialize the agent manager"""
+    global agent_manager_instance
+    if agent_manager_instance is None:
+        try:
+            from agents import initialize_agent_system
+
+            # Initialize agent system (this automatically registers all agents)
+            firebase_app = get_firebase_app()
+            agent_manager_instance = initialize_agent_system(firebase_app)
+
+            print("Agent system initialized successfully with all agents registered")
+
+        except Exception as e:
+            print(f"Failed to initialize agent system: {str(e)}")
+            agent_manager_instance = None
+
+    return agent_manager_instance
+
+def get_agent_dashboard():
+    """Get or initialize the agent dashboard"""
+    global agent_dashboard_instance
+    if agent_dashboard_instance is None:
+        agent_manager = get_agent_manager()
+        if agent_manager:
+            from agents.dashboard.agent_dashboard import AgentDashboard
+            agent_dashboard_instance = AgentDashboard(agent_manager)
+    return agent_dashboard_instance
+
+# Agent System Health Check
+@https_fn.on_request(
+    cors=options.CorsOptions(
+        cors_origins=ALLOWED_ORIGINS,
+        cors_methods=["get", "options"]
+    ),
+    invoker="public"
+)
+def api_agents_health(req: https_fn.Request) -> https_fn.Response:
+    """Agent system health check"""
+    if req.method == 'OPTIONS':
+        return handle_cors_preflight(req)
+
+    try:
+        agent_manager = get_agent_manager()
+
+        if not agent_manager:
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'error',
+                    'message': 'Agent system not initialized',
+                    'agents_available': False
+                }),
+                status=503,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+        # Get system status
+        try:
+            import asyncio
+            status = asyncio.run(agent_manager.get_system_status())
+
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'healthy',
+                    'message': 'Agent system operational',
+                    'agents_available': True,
+                    'system_status': status,
+                    'timestamp': datetime.now().isoformat()
+                }),
+                status=200,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+        except Exception as e:
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'degraded',
+                    'message': f'Agent system error: {str(e)}',
+                    'agents_available': False
+                }),
+                status=500,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+    except Exception as e:
+        return https_fn.Response(
+            json.dumps({
+                'status': 'error',
+                'message': f'Health check failed: {str(e)}',
+                'agents_available': False
+            }),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                **get_cors_headers(req.headers.get('Origin'))
+            }
+        )
+
+# Agent Dashboard API
+@https_fn.on_request(
+    cors=options.CorsOptions(
+        cors_origins=ALLOWED_ORIGINS,
+        cors_methods=["get", "post", "options"]
+    ),
+    memory=512,
+    timeout_sec=120
+)
+def api_agents_dashboard(req: https_fn.Request) -> https_fn.Response:
+    """Agent dashboard API"""
+    if req.method == 'OPTIONS':
+        return handle_cors_preflight(req)
+
+    try:
+        # Check Firebase authentication for dashboard access
+        user = require_firebase_user(req)
+        if not user:
+            return https_fn.Response(
+                json.dumps({
+                    'error': 'Authentication required for agent dashboard',
+                    'code': 'AUTH_REQUIRED'
+                }),
+                status=401,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+        dashboard = get_agent_dashboard()
+        if not dashboard:
+            return https_fn.Response(
+                json.dumps({
+                    'error': 'Agent dashboard not available',
+                    'message': 'Agent system not initialized'
+                }),
+                status=503,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+        import asyncio
+
+        if req.method == 'GET':
+            # Get dashboard overview
+            dashboard_data = asyncio.run(dashboard.get_dashboard_overview())
+
+            return https_fn.Response(
+                json.dumps(dashboard_data),
+                status=200,
+                headers={
+                    'Content-Type': 'application/json',
+                    **get_cors_headers(req.headers.get('Origin'))
+                }
+            )
+
+        elif req.method == 'POST':
+            # Handle dashboard actions
+            data = req.get_json()
+            if not data:
+                return https_fn.Response(
+                    json.dumps({'error': 'No data provided'}),
+                    status=400,
+                    headers={
+                        'Content-Type': 'application/json',
+                        **get_cors_headers(req.headers.get('Origin'))
+                    }
+                )
+
+            action = data.get('action')
+            if action == 'get_agent_details':
+                agent_id = data.get('agent_id')
+                if not agent_id:
+                    return https_fn.Response(
+                        json.dumps({'error': 'Agent ID required'}),
+                        status=400,
+                        headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                    )
+
+                agent_details = asyncio.run(dashboard.get_agent_details(agent_id))
+                return https_fn.Response(
+                    json.dumps(agent_details),
+                    status=200,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+            elif action == 'get_system_health':
+                health_data = asyncio.run(dashboard.get_system_health())
+                return https_fn.Response(
+                    json.dumps(health_data),
+                    status=200,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+            elif action == 'execute_agent_action':
+                agent_id = data.get('agent_id')
+                agent_action = data.get('agent_action')
+                parameters = data.get('parameters', {})
+
+                if not agent_id or not agent_action:
+                    return https_fn.Response(
+                        json.dumps({'error': 'Agent ID and action required'}),
+                        status=400,
+                        headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                    )
+
+                result = asyncio.run(dashboard.execute_agent_action(agent_id, agent_action, parameters))
+                return https_fn.Response(
+                    json.dumps(result),
+                    status=200,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+            elif action == 'get_task_management':
+                task_data = asyncio.run(dashboard.get_task_management_view())
+                return https_fn.Response(
+                    json.dumps(task_data),
+                    status=200,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+            elif action == 'get_analytics':
+                analytics_data = asyncio.run(dashboard.get_analytics_dashboard())
+                return https_fn.Response(
+                    json.dumps(analytics_data),
+                    status=200,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+            else:
+                return https_fn.Response(
+                    json.dumps({'error': f'Unknown action: {action}'}),
+                    status=400,
+                    headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+                )
+
+    except Exception as e:
+        error_message = sanitize_error_message(str(e))
+        return https_fn.Response(
+            json.dumps({
+                'error': error_message,
+                'message': 'Agent dashboard error'
+            }),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                **get_cors_headers(req.headers.get('Origin'))
+            }
+        )
+
+# Agent Task Execution API
+@https_fn.on_request(
+    cors=options.CorsOptions(
+        cors_origins=ALLOWED_ORIGINS,
+        cors_methods=["post", "options"]
+    ),
+    memory=512,
+    timeout_sec=300,
+    invoker="public"
+)
+def api_agents_task(req: https_fn.Request) -> https_fn.Response:
+    """Execute agent tasks"""
+    if req.method == 'OPTIONS':
+        return handle_cors_preflight(req)
+
+    if req.method != 'POST':
+        return https_fn.Response(
+            json.dumps({'error': 'Method not allowed'}),
+            status=405,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
+
+    try:
+        # Verify service account authentication for backend access
+        audience = "https://us-central1-smartbets-5c06f.cloudfunctions.net/api_agents_task"
+        claims = require_service_account(req, audience)
+        if not claims:
+            return https_fn.Response(
+                json.dumps({
+                    'error': 'Unauthorized service account access'
+                }),
+                status=401,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        data = req.get_json()
+        if not data:
+            return https_fn.Response(
+                json.dumps({'error': 'No data provided'}),
+                status=400,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        task_type = data.get('task_type')
+        task_data = data.get('task_data', {})
+        agent_id = data.get('agent_id')  # Optional - for specific agent
+        priority = data.get('priority', 2)
+
+        if not task_type:
+            return https_fn.Response(
+                json.dumps({'error': 'Task type is required'}),
+                status=400,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        agent_manager = get_agent_manager()
+        if not agent_manager:
+            return https_fn.Response(
+                json.dumps({'error': 'Agent system not available'}),
+                status=503,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        import asyncio
+        from agents.core.base_agent import Task, TaskPriority
+
+        # Create task
+        task = Task(
+            task_type=task_type,
+            data=task_data,
+            priority=TaskPriority(priority),
+            created_by=user_id
+        )
+
+        # Route task to appropriate agent
+        if agent_id:
+            # Assign to specific agent
+            success = asyncio.run(agent_manager.assign_task(agent_id, task))
+            if success:
+                result = {
+                    'success': True,
+                    'task_id': task.id,
+                    'agent_id': agent_id,
+                    'message': f'Task assigned to agent {agent_id}'
+                }
+            else:
+                result = {
+                    'success': False,
+                    'error': f'Failed to assign task to agent {agent_id}'
+                }
+        else:
+            # Auto-route to best agent
+            task_id = asyncio.run(agent_manager.route_task(task_type, task_data, TaskPriority(priority)))
+            if task_id:
+                result = {
+                    'success': True,
+                    'task_id': task_id,
+                    'message': 'Task routed to appropriate agent'
+                }
+            else:
+                result = {
+                    'success': False,
+                    'error': 'No suitable agent found for task'
+                }
+
+        return https_fn.Response(
+            json.dumps(result),
+            status=200 if result['success'] else 400,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
+
+    except Exception as e:
+        error_message = sanitize_error_message(str(e))
+        return https_fn.Response(
+            json.dumps({
+                'success': False,
+                'error': error_message,
+                'message': 'Failed to execute agent task'
+            }),
+            status=500,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
+
+# Agent System Initialization Function
+@https_fn.on_request(
+    cors=options.CorsOptions(
+        cors_origins=ALLOWED_ORIGINS,
+        cors_methods=["post", "options"]
+    ),
+    memory=512,
+    timeout_sec=120,
+    invoker="public"
+)
+def api_agents_init(req: https_fn.Request) -> https_fn.Response:
+    """Initialize and start the agent system"""
+    if req.method == 'OPTIONS':
+        return handle_cors_preflight(req)
+
+    if req.method != 'POST':
+        return https_fn.Response(
+            json.dumps({'error': 'Method not allowed'}),
+            status=405,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
+
+    try:
+        # Verify Firebase authentication - only authenticated users can initialize agents
+        user = require_firebase_user(req)
+        if not user:
+            return https_fn.Response(
+                json.dumps({
+                    'error': 'Authentication required',
+                    'code': 'AUTH_REQUIRED'
+                }),
+                status=401,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        data = req.get_json() or {}
+        agents_to_create = data.get('agents', ['marketing_manager', 'security_manager', 'testing_quality_manager', 'data_analytics_manager'])
+
+        agent_manager = get_agent_manager()
+        if not agent_manager:
+            return https_fn.Response(
+                json.dumps({'error': 'Failed to initialize agent system'}),
+                status=503,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        import asyncio
+
+        # Start the agent manager
+        manager_started = asyncio.run(agent_manager.start())
+        if not manager_started:
+            return https_fn.Response(
+                json.dumps({'error': 'Failed to start agent manager'}),
+                status=500,
+                headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+            )
+
+        # Create and start agents
+        created_agents = []
+        failed_agents = []
+
+        for agent_type in agents_to_create:
+            try:
+                agent = asyncio.run(agent_manager.create_agent(
+                    agent_type=agent_type,
+                    agent_id=agent_type,
+                    name=agent_type.replace('_', ' ').title(),
+                    auto_start=True
+                ))
+
+                if agent:
+                    created_agents.append({
+                        'id': agent.id,
+                        'name': agent.name,
+                        'type': agent_type,
+                        'status': agent.status.value
+                    })
+                else:
+                    failed_agents.append(agent_type)
+
+            except Exception as e:
+                print(f"Failed to create agent {agent_type}: {str(e)}")
+                failed_agents.append(agent_type)
+
+        result = {
+            'success': len(created_agents) > 0,
+            'message': f'Agent system initialized with {len(created_agents)} agents',
+            'created_agents': created_agents,
+            'failed_agents': failed_agents,
+            'manager_status': 'active' if manager_started else 'failed',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+        return https_fn.Response(
+            json.dumps(result),
+            status=200,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
+
+    except Exception as e:
+        error_message = sanitize_error_message(str(e))
+        return https_fn.Response(
+            json.dumps({
+                'success': False,
+                'error': error_message,
+                'message': 'Failed to initialize agent system'
+            }),
+            status=500,
+            headers={'Content-Type': 'application/json', **get_cors_headers(req.headers.get('Origin'))}
+        )
 
 # Export the functions
 # Note: Firebase Functions for Python automatically detects functions with the @https_fn.on_request decorator

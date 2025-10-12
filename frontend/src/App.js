@@ -153,9 +153,9 @@ const AppContent = () => {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/parlay" 
-            element={<ParlayPage />}
+          <Route
+            path="/parlay"
+            element={<Navigate to="/live-sports" replace />}
           />
           <Route 
             path="/test-live-data" 

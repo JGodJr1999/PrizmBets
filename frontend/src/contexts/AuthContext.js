@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { apiService } from '../services/api';
 import toast from 'react-hot-toast';
-import { auth } from '../config/firebase';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { auth, db } from '../config/firebase';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, updateProfile as updateFirebaseProfile } from 'firebase/auth';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import analytics from '../utils/analytics';
 
 // Auth Context
@@ -160,61 +161,53 @@ const getStoredUser = () => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Initialize auth state on app load
+  // Initialize auth state with Firebase listener
   useEffect(() => {
-    const initializeAuth = async () => {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      
-      const storedTokens = getStoredTokens();
-      const storedUser = getStoredUser();
-      
-      if (storedTokens && storedTokens.accessToken && storedUser) {
+    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+
+    // Set up Firebase auth state listener
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('Firebase auth state changed:', firebaseUser?.uid || 'null');
+
+      if (firebaseUser) {
         try {
-          // Verify the token with the backend
-          const userResponse = await apiService.getCurrentUser(storedTokens.accessToken);
-          
+          // Get fresh Firebase ID token
+          const idToken = await firebaseUser.getIdToken();
+
+          // Create user object from Firebase data
+          const user = {
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            email: firebaseUser.email,
+            provider: firebaseUser.providerData[0]?.providerId || 'email'
+          };
+
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
             payload: {
-              user: userResponse.user,
-              accessToken: storedTokens.accessToken,
-              refreshToken: storedTokens.refreshToken
+              user: user,
+              accessToken: idToken,
+              refreshToken: null // Firebase handles refresh internally
             }
           });
+
+          // Store user data - check if we should remember
+          const rememberMe = localStorage.getItem('prizmbets_remember_preference') === 'true';
+          storeTokens(idToken, null, rememberMe);
+          storeUser(user, rememberMe);
         } catch (error) {
-          // Token might be expired, try to refresh
-          if (storedTokens.refreshToken) {
-            try {
-              const refreshResponse = await apiService.refreshToken(storedTokens.refreshToken);
-              
-              dispatch({
-                type: AUTH_ACTIONS.LOGIN_SUCCESS,
-                payload: {
-                  user: refreshResponse.user,
-                  accessToken: refreshResponse.access_token,
-                  refreshToken: refreshResponse.refresh_token
-                }
-              });
-              
-              // Store the new tokens
-              storeTokens(refreshResponse.access_token, refreshResponse.refresh_token, true);
-              storeUser(refreshResponse.user, true);
-            } catch (refreshError) {
-              console.error('Token refresh failed:', refreshError);
-              clearStoredTokens();
-              dispatch({ type: AUTH_ACTIONS.LOGOUT });
-            }
-          } else {
-            clearStoredTokens();
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
-          }
+          console.error('Error processing Firebase user:', error);
+          dispatch({ type: AUTH_ACTIONS.LOGOUT });
         }
       } else {
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+        // User is signed out
+        clearStoredTokens();
+        dispatch({ type: AUTH_ACTIONS.LOGOUT });
       }
-    };
+    });
 
-    initializeAuth();
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   // Handle automatic logout on token expiration
@@ -317,25 +310,61 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update user profile
+  // Update user profile using Firebase
   const updateProfile = async (profileData) => {
     try {
-      const response = await apiService.updateProfile(profileData, state.accessToken);
-      
+      console.log('Updating profile with Firebase:', profileData);
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Update Firebase Auth profile (displayName)
+      if (profileData.name && profileData.name !== currentUser.displayName) {
+        await updateFirebaseProfile(currentUser, {
+          displayName: profileData.name
+        });
+        console.log('Firebase Auth profile updated');
+      }
+
+      // Update user document in Firestore
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const updateData = {
+        displayName: profileData.name || '',
+        name: profileData.name || '',
+        email: profileData.email || currentUser.email,
+        lastUpdated: new Date().toISOString(),
+        profileUpdatedAt: new Date().toISOString()
+      };
+
+      await setDoc(userDocRef, updateData, { merge: true });
+      console.log('Firestore user document updated');
+
+      // Update local state
+      const updatedUser = {
+        ...state.user,
+        name: profileData.name,
+        displayName: profileData.name,
+        email: profileData.email || currentUser.email
+      };
+
       dispatch({
         type: AUTH_ACTIONS.SET_USER,
-        payload: response.user
+        payload: updatedUser
       });
-      
+
       // Update stored user data
       const rememberMe = localStorage.getItem(TOKEN_STORAGE_KEY) !== null;
-      storeUser(response.user, rememberMe);
-      
+      storeUser(updatedUser, rememberMe);
+
+      console.log('Profile update completed successfully');
       toast.success('Profile updated successfully');
       return { success: true };
-      
+
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.message || 'Profile update failed';
+      console.error('Profile update error:', error);
+      const errorMessage = error.message || 'Profile update failed';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }

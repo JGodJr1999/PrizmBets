@@ -110,6 +110,10 @@ const AccountPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
 
+  console.log('=== AccountPage rendering ===');
+  console.log('Active tab:', activeTab);
+  console.log('User from useAuth:', user);
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
@@ -118,16 +122,25 @@ const AccountPage = () => {
   ];
 
   const renderContent = () => {
+    console.log('=== renderContent called ===');
+    console.log('activeTab:', activeTab);
+    console.log('user for component:', user);
+
     switch (activeTab) {
       case 'profile':
+        console.log('Rendering ProfileSettings with user:', user);
         return <ProfileSettings user={user} />;
       case 'subscription':
+        console.log('Rendering SubscriptionSettings');
         return <SubscriptionSettings user={user} />;
       case 'notifications':
+        console.log('Rendering NotificationSettings');
         return <NotificationSettings user={user} />;
       case 'security':
+        console.log('Rendering SecuritySettings');
         return <SecuritySettings user={user} />;
       default:
+        console.log('Rendering default ProfileSettings with user:', user);
         return <ProfileSettings user={user} />;
     }
   };
