@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, BarChart3, User, Calendar, CreditCard, Menu, X, Trophy, Star, Crown, Target, DollarSign, Home, Layers, Lock } from 'lucide-react';
+import { BarChart3, User, Menu, X, Trophy, Star, Crown, DollarSign, Home, Lock } from 'lucide-react';
+import prizmLogo from '../../assets/images/prizm-logo.png';
 import UserColumnMenu from './UserColumnMenu';
-import AgentNotifications from '../Agent/AgentNotifications';
-import MasterAdminBadge from '../MasterAdmin/MasterAdminBadge';
 import { useUsageTracking } from '../../hooks/useUsageTracking';
 
 const HeaderContainer = styled.header`
@@ -45,18 +44,20 @@ const Logo = styled.div`
     transform: scale(1.02);
   }
 
-  svg {
-    width: clamp(24px, 3vw, 28px);
-    height: clamp(24px, 3vw, 28px);
-  }
-
   @media (max-width: 968px) {
     font-size: 1.3rem;
+  }
+`;
 
-    svg {
-      width: 26px;
-      height: 26px;
-    }
+const LogoImage = styled.img`
+  width: clamp(32px, 4vw, 40px);
+  height: clamp(32px, 4vw, 40px);
+  object-fit: contain;
+  filter: brightness(1.1);
+
+  @media (max-width: 968px) {
+    width: 34px;
+    height: 34px;
   }
 `;
 
@@ -349,10 +350,39 @@ const BetaTag = styled.span`
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: ${props => props.theme.spacing.xs};
-  
+
   @media (max-width: ${props => props.theme.breakpoints.sm}) {
     font-size: 0.6rem;
     padding: 1px 4px;
+  }
+`;
+
+const CrownIcon = styled.span`
+  font-size: 20px;
+  line-height: 1;
+  cursor: default;
+  color: #ffd700;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.md};
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.1);
+    transform: scale(1.05);
+  }
+
+  @media (max-width: ${props => props.theme.breakpoints.lg}) {
+    font-size: 18px;
+    padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  }
+
+  @media (max-width: ${props => props.theme.breakpoints.md}) {
+    width: 100%;
+    justify-content: center;
+    padding: ${props => props.theme.spacing.md};
+    font-size: 20px;
   }
 `;
 
@@ -381,17 +411,14 @@ const Header = ({ user = null, onLogout }) => {
   return (
     <HeaderContainer>
       <HeaderContent>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Logo onClick={handleLogoClick}>
-            <Brain size={28} />
-            <LogoText>
-              <span>Prizm</span>
-              <span>Bets</span>
-            </LogoText>
-            <BetaTag>BETA</BetaTag>
-          </Logo>
-          {isMasterAdmin && <MasterAdminBadge />}
-        </div>
+        <Logo onClick={handleLogoClick}>
+          <LogoImage src={prizmLogo} alt="PrizmBets Logo" />
+          <LogoText>
+            <span>Prizm</span>
+            <span>Bets</span>
+          </LogoText>
+          <BetaTag>BETA</BetaTag>
+        </Logo>
         
         <MobileMenuButton onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -422,13 +449,6 @@ const Header = ({ user = null, onLogout }) => {
             Live Scores
           </NavItem>
 
-          <NavItem
-            active={isActive('/my-bets')}
-            onClick={() => handleNavigation('/my-bets')}
-          >
-            <CreditCard size={16} />
-            My Bets
-          </NavItem>
 
           {/* Master Admin only navigation */}
           {isMasterAdmin && (
@@ -482,7 +502,10 @@ const Header = ({ user = null, onLogout }) => {
             NFL Fantasy
             <ComingSoonBadge>2026</ComingSoonBadge>
           </NavItem>
-          
+
+          {/* Master Admin Crown Icon between NFL Fantasy and User */}
+          {isMasterAdmin && <CrownIcon>👑</CrownIcon>}
+
           {user?.role === 'admin' && (
             <NavItem
               active={isActive('/admin')}

@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import styled from 'styled-components';
@@ -14,6 +14,9 @@ import LoadingSpinner from './components/UI/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import { PageLoadingSkeleton } from './components/UI/SkeletonLoader';
 import AuthScreen from './components/Auth/AuthScreen';
+import FloatingBetSlipButton from './components/BetSlip/FloatingBetSlipButton';
+import SlidingBetSlip from './components/BetSlip/SlidingBetSlip';
+import { useBetSlip } from './hooks/useBetSlip';
 
 // Critical components no longer needed at app level due to authentication gate
 
@@ -55,6 +58,18 @@ const MainContent = styled.main`
 // Main App component with Authentication Gate
 const AppContent = () => {
   const { user, logout, isLoading, isAuthenticated } = useAuth();
+  const { bets, addBet, updateBetStatus } = useBetSlip();
+  const [betSlipOpen, setBetSlipOpen] = useState(false);
+
+  // Auto-open bet slip when new bet is added
+  const handleAddBet = async (betData) => {
+    try {
+      await addBet(betData);
+      setBetSlipOpen(true); // Auto-open slip
+    } catch (error) {
+      console.error('Failed to add bet:', error);
+    }
+  };
 
   // Show loading screen while checking authentication
   if (isLoading) {
@@ -113,6 +128,26 @@ const AppContent = () => {
         </Suspense>
       </MainContent>
       <Footer />
+
+      {/* Floating bet slip button - only show if user has bets */}
+      <FloatingBetSlipButton
+        betCount={bets.length}
+        onClick={() => setBetSlipOpen(true)}
+      />
+
+      {/* Sliding bet slip panel */}
+      <SlidingBetSlip
+        isOpen={betSlipOpen}
+        onClose={() => setBetSlipOpen(false)}
+        bets={bets}
+        onUpdateBetStatus={updateBetStatus}
+        onAddBet={() => {
+          setBetSlipOpen(false);
+          // Navigate to my-bets page to add new bet
+          window.location.href = '/my-bets';
+        }}
+      />
+
       <Toaster
         position="top-right"
         toastOptions={{

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Shield, Lock, Eye, EyeOff, Smartphone, Key, AlertTriangle, Check } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, Smartphone, Key, AlertTriangle, Check, Fingerprint } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { settingsService } from '../../services/settingsService';
+import { db } from '../../config/firebase';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
 const SecurityContainer = styled.div`
   display: flex;
@@ -242,6 +244,8 @@ const SecuritySettings = ({ user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
 
   // Load existing security settings on component mount
   useEffect(() => {
@@ -252,6 +256,13 @@ const SecuritySettings = ({ user }) => {
 
         if (savedSettings) {
           setTwoFactorEnabled(savedSettings.twoFactorEnabled || false);
+        }
+
+        // Load biometric settings from user document
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userData = userDoc.data();
+          setBiometricEnabled(userData?.biometricEnabled || false);
         }
       } catch (error) {
         console.error('Failed to load security settings:', error);
@@ -267,6 +278,17 @@ const SecuritySettings = ({ user }) => {
       setIsLoadingSettings(false);
     }
   }, [user]);
+
+  // Check biometric support on component mount
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      const isSupported = window.PublicKeyCredential &&
+        await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      setBiometricSupported(isSupported);
+    };
+
+    checkBiometricSupport();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -349,6 +371,73 @@ const SecuritySettings = ({ user }) => {
     } catch (error) {
       console.error('Error saving security settings:', error);
       toast.error('Failed to update two-factor authentication');
+    }
+  };
+
+  const handleBiometricToggle = async () => {
+    if (!biometricSupported) {
+      toast.error('Biometric authentication is not supported on this device');
+      return;
+    }
+
+    try {
+      if (!biometricEnabled) {
+        // Enable biometric authentication
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge: new Uint8Array(32),
+            rp: {
+              name: "PrizmBets",
+              id: window.location.hostname
+            },
+            user: {
+              id: new TextEncoder().encode(user.uid),
+              name: user.email,
+              displayName: user.displayName || user.email
+            },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform",
+              userVerification: "required"
+            },
+            timeout: 60000
+          }
+        });
+
+        // Save credential ID to user document
+        await updateDoc(doc(db, 'users', user.uid), {
+          biometricEnabled: true,
+          biometricCredentialId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
+          biometricEnabledAt: new Date().toISOString()
+        });
+
+        setBiometricEnabled(true);
+        toast.success('Biometric authentication enabled!');
+      } else {
+        // Disable biometric authentication
+        await updateDoc(doc(db, 'users', user.uid), {
+          biometricEnabled: false,
+          biometricCredentialId: null,
+          biometricDisabledAt: new Date().toISOString()
+        });
+
+        setBiometricEnabled(false);
+        toast.success('Biometric authentication disabled');
+      }
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+
+      let errorMessage = 'Failed to update biometric authentication';
+
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Biometric authentication was cancelled or not allowed';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'Biometric authentication is not supported on this device';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Biometric authentication failed due to security restrictions';
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -514,6 +603,56 @@ const SecuritySettings = ({ user }) => {
           </Button>
         </TwoFactorSection>
       </SecurityCard>
+
+      {biometricSupported && (
+        <SecurityCard>
+          <CardTitle>
+            <Fingerprint size={20} />
+            Biometric Authentication
+          </CardTitle>
+          <CardDescription>
+            Use your fingerprint, face recognition, or other biometric authentication to sign in quickly and securely.
+          </CardDescription>
+
+          <TwoFactorSection enabled={biometricEnabled}>
+            <TwoFactorInfo>
+              <StatusIcon enabled={biometricEnabled}>
+                {biometricEnabled ? <Check size={20} /> : <Fingerprint size={20} />}
+              </StatusIcon>
+              <TwoFactorText>
+                <h4>Biometric Sign-In</h4>
+                <p>
+                  {biometricEnabled
+                    ? 'Face ID / Touch ID / Windows Hello is enabled'
+                    : 'Enable biometric authentication for faster sign-in'
+                  }
+                </p>
+              </TwoFactorText>
+            </TwoFactorInfo>
+
+            <Button
+              type="button"
+              variant={biometricEnabled ? 'danger' : 'primary'}
+              onClick={handleBiometricToggle}
+            >
+              <Fingerprint size={16} />
+              {biometricEnabled ? 'Disable Biometric' : 'Enable Biometric'}
+            </Button>
+          </TwoFactorSection>
+        </SecurityCard>
+      )}
+
+      {!biometricSupported && (
+        <SecurityCard>
+          <CardTitle>
+            <Fingerprint size={20} />
+            Biometric Authentication
+          </CardTitle>
+          <CardDescription>
+            Biometric authentication is not available on this device. This feature requires a device with Face ID, Touch ID, Windows Hello, or other platform authenticators.
+          </CardDescription>
+        </SecurityCard>
+      )}
     </SecurityContainer>
   );
 };

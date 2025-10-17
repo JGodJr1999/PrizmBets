@@ -16,7 +16,8 @@
       "Bash(firebase deploy:*)",
       "Bash(PORT=3002 npm start)",
       "Bash(firebase login:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(firebase auth:export:*)"
     ],
     "deny": [],
     "ask": [],

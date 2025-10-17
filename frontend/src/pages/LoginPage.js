@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Brain, Shield, Info } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Brain, Shield, Info, Fingerprint } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRecaptcha } from '../contexts/RecaptchaContext';
@@ -9,6 +9,12 @@ import { validateLoginForm } from '../utils/authValidation';
 import SocialAuthButtons from '../components/Auth/SocialAuthButtons';
 import ProfessionalSpinner from '../components/UI/ProfessionalSpinner';
 import ErrorAlert from '../components/UI/ErrorAlert';
+import ForgotPasswordModal from '../components/Auth/ForgotPasswordModal';
+import { db } from '../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { httpsCallable, getFunctions } from 'firebase/functions';
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -144,6 +150,36 @@ const LoginButton = styled.button`
   }
 `;
 
+const BiometricButton = styled.button`
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.md};
+  padding: ${props => props.theme.spacing.md};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.sm};
+  min-height: 50px;
+  margin-top: ${props => props.theme.spacing.md};
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    border-color: ${props => props.theme.colors.accent.primary};
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
 const LinkText = styled.p`
   text-align: center;
   color: ${props => props.theme.colors.text.secondary};
@@ -253,6 +289,24 @@ const CheckboxLabel = styled.label`
   gap: ${props => props.theme.spacing.xs};
 `;
 
+const ForgotPasswordLink = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme.colors.accent.primary};
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: ${props => props.theme.spacing.sm};
+  padding: ${props => props.theme.spacing.xs} 0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    text-decoration: underline;
+    color: ${props => props.theme.colors.accent.primary}dd;
+  }
+`;
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -267,6 +321,8 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   // Load saved "Remember Me" preference
   useEffect(() => {
@@ -275,7 +331,19 @@ const LoginPage = () => {
       setFormData(prev => ({ ...prev, rememberMe: true }));
     }
   }, []);
-  
+
+  // Check for biometric availability
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      if (window.PublicKeyCredential) {
+        const isAvailable = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        setBiometricAvailable(isAvailable);
+      }
+    };
+
+    checkBiometricSupport();
+  }, []);
+
   // Get the intended destination from location state, returnUrl, or default to home
   const returnUrl = sessionStorage.getItem('returnUrl');
   const from = location.state?.returnUrl || returnUrl || location.state?.from?.pathname || '/';
@@ -369,6 +437,89 @@ const LoginPage = () => {
     // Error handling is done in the AuthContext and shown via toast
   };
 
+  const handleBiometricSignIn = async () => {
+    try {
+      // Get credential from the authenticator
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32), // In production, this should be a server-generated challenge
+          timeout: 60000,
+          userVerification: "required"
+        }
+      });
+
+      // Convert credential ID to base64 for database query
+      const credentialId = btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
+
+      // Find user by credential ID
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('biometricCredentialId', '==', credentialId)
+      );
+
+      const userSnap = await getDocs(usersQuery);
+
+      if (!userSnap.empty) {
+        const userData = userSnap.docs[0].data();
+        const userId = userSnap.docs[0].id;
+
+        console.log('Biometric authentication successful for user:', userData.email);
+
+        // Call backend function to get custom token
+        const functions = getFunctions();
+        const authenticateWithBiometric = httpsCallable(functions, 'authenticate_with_biometric');
+
+        try {
+          const result = await authenticateWithBiometric({
+            credentialId,
+            userId
+          });
+
+          if (result.data.success) {
+            // Sign in with the custom token
+            await signInWithCustomToken(auth, result.data.token);
+
+            toast.success('Biometric authentication successful!');
+
+            // Clear returnUrl from sessionStorage if it exists
+            if (returnUrl) {
+              sessionStorage.removeItem('returnUrl');
+            }
+
+            // Show success message for switch user
+            if (location.state?.switching) {
+              toast.success('Successfully switched accounts!');
+            }
+
+            // Redirect to intended destination
+            navigate(from, { replace: true });
+          } else {
+            throw new Error(result.data.error || 'Authentication failed');
+          }
+        } catch (backendError) {
+          console.error('Backend authentication error:', backendError);
+          toast.error('Authentication failed. Please try again.');
+        }
+      } else {
+        toast.error('Biometric credential not found. Please set up biometric authentication in your account settings.');
+      }
+    } catch (error) {
+      console.error('Biometric sign-in error:', error);
+
+      let errorMessage = 'Biometric sign-in failed';
+
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Biometric authentication was cancelled';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'Biometric authentication is not supported';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Biometric authentication failed due to security restrictions';
+      }
+
+      toast.error(errorMessage);
+    }
+  };
+
   return (
     <LoginContainer>
       <LoginCard>
@@ -432,8 +583,14 @@ const LoginPage = () => {
               </PasswordToggle>
             </InputWrapper>
             {errors.password && <ErrorMessage>{errors.password}</ErrorMessage>}
+            <ForgotPasswordLink
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+            >
+              Forgot your password?
+            </ForgotPasswordLink>
           </InputGroup>
-          
+
           <CheckboxGroup>
             <CheckboxRow>
               <Checkbox
@@ -488,12 +645,30 @@ const LoginPage = () => {
               'Sign In'
             )}
           </LoginButton>
+
+          {biometricAvailable && (
+            <BiometricButton
+              type="button"
+              onClick={handleBiometricSignIn}
+              disabled={isLoading}
+            >
+              <Fingerprint size={20} />
+              Sign In with Face ID / Touch ID
+            </BiometricButton>
+          )}
         </Form>
-        
+
         <LinkText>
           Don't have an account? <Link to="/register">Sign up here</Link>
         </LinkText>
       </LoginCard>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPassword(false)}
+          defaultEmail={formData.email}
+        />
+      )}
     </LoginContainer>
   );
 };
