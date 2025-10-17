@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { BarChart3, Clock, CheckCircle } from 'lucide-react';
+import { BarChart3, Clock, CheckCircle, Crown } from 'lucide-react';
 import BestOddsDisplay from '../UI/BestOddsDisplay';
 
 const DashboardContainer = styled.div`
@@ -25,10 +25,28 @@ const MainTitle = styled.h1`
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.sm};
 
   @media (max-width: ${props => props.theme.breakpoints.md}) {
     font-size: 2.5rem;
   }
+`;
+
+const PlanBadge = styled.div`
+  background: linear-gradient(135deg, #F59E0B, #EAB308);
+  color: ${props => props.theme.colors.background.primary};
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.full};
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+  margin-bottom: ${props => props.theme.spacing.md};
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 `;
 
 const Subtitle = styled.p`
@@ -368,9 +386,13 @@ const AITop5Dashboard = () => {
   return (
     <DashboardContainer>
       <DashboardHeader>
-        <MainTitle>AI's Top 5</MainTitle>
+        <PlanBadge>
+          <Crown size={14} />
+          Elite Plan
+        </PlanBadge>
+        <MainTitle>AI's Top 5 Per Sport</MainTitle>
         <Subtitle>
-          Our AI's highest probability bets for each sport with detailed analytics and reasoning
+          Our AI's 5 highest probability bets for EACH sport with detailed analytics and reasoning
         </Subtitle>
       </DashboardHeader>
 

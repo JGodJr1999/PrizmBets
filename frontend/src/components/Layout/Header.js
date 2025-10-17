@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Brain, BarChart3, User, Calendar, CreditCard, Menu, X, Trophy, Star, Crown, Target, DollarSign, Home, Layers } from 'lucide-react';
+import { Brain, BarChart3, User, Calendar, CreditCard, Menu, X, Trophy, Star, Crown, Target, DollarSign, Home, Layers, Lock } from 'lucide-react';
 import UserColumnMenu from './UserColumnMenu';
 import AgentNotifications from '../Agent/AgentNotifications';
+import MasterAdminBadge from '../MasterAdmin/MasterAdminBadge';
+import { useUsageTracking } from '../../hooks/useUsageTracking';
 
 const HeaderContainer = styled.header`
   background: ${props => props.theme.colors.background.primary};
@@ -358,6 +360,7 @@ const Header = ({ user = null, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isFreeTier, isMasterAdmin } = useUsageTracking();
 
   const isActive = (path) => location.pathname === path;
 
@@ -378,14 +381,17 @@ const Header = ({ user = null, onLogout }) => {
   return (
     <HeaderContainer>
       <HeaderContent>
-        <Logo onClick={handleLogoClick}>
-          <Brain size={28} />
-          <LogoText>
-            <span>Prizm</span>
-            <span>Bets</span>
-          </LogoText>
-          <BetaTag>BETA</BetaTag>
-        </Logo>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Logo onClick={handleLogoClick}>
+            <Brain size={28} />
+            <LogoText>
+              <span>Prizm</span>
+              <span>Bets</span>
+            </LogoText>
+            <BetaTag>BETA</BetaTag>
+          </Logo>
+          {isMasterAdmin && <MasterAdminBadge />}
+        </div>
         
         <MobileMenuButton onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -415,13 +421,48 @@ const Header = ({ user = null, onLogout }) => {
             <Trophy size={16} />
             Live Scores
           </NavItem>
-          
-          <NavItem 
+
+          <NavItem
+            active={isActive('/my-bets')}
+            onClick={() => handleNavigation('/my-bets')}
+          >
+            <CreditCard size={16} />
+            My Bets
+          </NavItem>
+
+          {/* Master Admin only navigation */}
+          {isMasterAdmin && (
+            <NavItem
+              active={isActive('/admin-management')}
+              onClick={() => handleNavigation('/admin-management')}
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1))',
+                border: '1px solid rgba(255, 215, 0, 0.3)',
+                position: 'relative'
+              }}
+            >
+              <Crown size={16} />
+              Admin Management
+            </NavItem>
+          )}
+
+          <NavItem
             active={isActive('/projections')}
             onClick={() => handleNavigation('/projections')}
+            style={{ position: 'relative' }}
           >
             <BarChart3 size={16} />
             AI's Top 5
+            {isFreeTier && !isMasterAdmin && (
+              <Lock
+                size={12}
+                style={{
+                  marginLeft: '4px',
+                  color: '#ff8c42',
+                  opacity: 0.8
+                }}
+              />
+            )}
           </NavItem>
           
           <NavItem

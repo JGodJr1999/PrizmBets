@@ -9,7 +9,14 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nCRITICAL FIX: Resolve authentication system failures - Users can now sign up and sign in\n\n✅ FIXED COMPILATION ERROR:\n- Removed invalid Template import from AgentDashboardPage.js that was causing build failures\n- App now compiles and runs successfully\n\n🔐 AUTHENTICATION SYSTEM OVERHAUL:\n- Fixed broken authentication architecture that prevented user registration and login\n- Converted from broken backend auth to pure Firebase Authentication\n- Added missing loginWithFirebaseEmail function to AuthContext\n- Updated RegisterPage to use registerWithFirebase instead of non-existent register function\n- Updated LoginPage to use loginWithFirebaseEmail instead of broken login function\n\n⚡ TECHNICAL IMPROVEMENTS:\n- Modified Firebase auth functions to work without backend API dependencies\n- Maintained user session management and token storage\n- Preserved all UI/UX flows while fixing underlying architecture\n- Enhanced error handling and user feedback systems\n\n🚀 USER IMPACT:\n- Users can now successfully create new accounts\n- Users can now sign in with email/password\n- Authentication state properly persists across sessions\n- Comprehensive error messages guide users through any issues\n\n🎯 ROOT CAUSE RESOLVED:\n- System was expecting backend auth endpoints (/auth/register, /auth/login) that were never deployed\n- Only sports betting functions were deployed to Firebase Functions\n- Solution: Pure Firebase Authentication integration without backend dependency\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
       "Bash(kill:*)",
-      "Bash(PORT=3001 npm start)"
+      "Bash(PORT=3001 npm start)",
+      "Bash(firebase hosting:channel:list:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(PORT=3002 npm start)",
+      "Bash(firebase login:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

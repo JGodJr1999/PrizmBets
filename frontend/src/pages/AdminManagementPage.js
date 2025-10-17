@@ -1,0 +1,435 @@
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
+import { Crown, Mail, Link, Copy, Users, Settings, Shield, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useUsageTracking } from '../hooks/useUsageTracking';
+import { isMasterAdmin } from '../services/masterAdminService';
+import MasterAdminCard from '../components/MasterAdmin/MasterAdminCard';
+import toast from 'react-hot-toast';
+
+const PageContainer = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: ${props => props.theme.spacing.xl};
+  background: ${props => props.theme.colors.background.primary};
+  min-height: 100vh;
+`;
+
+const PageHeader = styled.div`
+  text-align: center;
+  margin-bottom: ${props => props.theme.spacing.xl};
+`;
+
+const PageTitle = styled.h1`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 ${props => props.theme.spacing.sm} 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.md};
+`;
+
+const PageSubtitle = styled.p`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 1.2rem;
+  margin: 0 0 ${props => props.theme.spacing.lg} 0;
+`;
+
+const SectionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: ${props => props.theme.spacing.xl};
+  margin-bottom: ${props => props.theme.spacing.xl};
+`;
+
+const Section = styled.div`
+  background: ${props => props.theme.colors.background.card};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.lg};
+  padding: ${props => props.theme.spacing.xl};
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${props => props.theme.colors.accent.primary}40;
+    transform: translateY(-2px);
+  }
+`;
+
+const SectionTitle = styled.h2`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 ${props => props.theme.spacing.md} 0;
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const Label = styled.label`
+  display: block;
+  color: ${props => props.theme.colors.text.primary};
+  font-weight: 500;
+  margin-bottom: ${props => props.theme.spacing.xs};
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background: ${props => props.theme.colors.background.secondary};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 1rem;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.accent.primary};
+    box-shadow: 0 0 0 3px ${props => props.theme.colors.accent.primary}20;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const Button = styled.button`
+  background: ${props => props.disabled ? props.theme.colors.background.hover : props.theme.colors.accent.primary};
+  color: ${props => props.disabled ? props.theme.colors.text.muted : props.theme.colors.background.primary};
+  border: none;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.lg};
+  border-radius: ${props => props.theme.borderRadius.md};
+  font-weight: 600;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+
+  &:hover:not(:disabled) {
+    background: ${props => props.theme.colors.accent.secondary};
+    transform: translateY(-1px);
+  }
+`;
+
+const SecondaryButton = styled(Button)`
+  background: ${props => props.theme.colors.background.secondary};
+  color: ${props => props.theme.colors.text.primary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+
+  &:hover:not(:disabled) {
+    background: ${props => props.theme.colors.background.hover};
+    border-color: ${props => props.theme.colors.accent.primary};
+  }
+`;
+
+const InviteResult = styled.div`
+  background: ${props => props.theme.colors.background.secondary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.md};
+  padding: ${props => props.theme.spacing.lg};
+  margin-top: ${props => props.theme.spacing.md};
+`;
+
+const InviteLink = styled.div`
+  background: ${props => props.theme.colors.background.hover};
+  border: 1px solid ${props => props.theme.colors.border.secondary};
+  border-radius: ${props => props.theme.borderRadius.sm};
+  padding: ${props => props.theme.spacing.sm};
+  font-family: monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+  margin: ${props => props.theme.spacing.sm} 0;
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const CopyButton = styled.button`
+  background: ${props => props.theme.colors.accent.primary};
+  color: ${props => props.theme.colors.background.primary};
+  border: none;
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  border-radius: ${props => props.theme.borderRadius.sm};
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background: ${props => props.theme.colors.accent.secondary};
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: ${props => props.theme.colors.status.error};
+  background: ${props => props.theme.colors.status.error}10;
+  border: 1px solid ${props => props.theme.colors.status.error}30;
+  border-radius: ${props => props.theme.borderRadius.sm};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-top: ${props => props.theme.spacing.sm};
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const SuccessMessage = styled.div`
+  color: ${props => props.theme.colors.status.success};
+  background: ${props => props.theme.colors.status.success}10;
+  border: 1px solid ${props => props.theme.colors.status.success}30;
+  border-radius: ${props => props.theme.borderRadius.sm};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-top: ${props => props.theme.spacing.sm};
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const InfoMessage = styled.div`
+  color: ${props => props.theme.colors.accent.primary};
+  background: ${props => props.theme.colors.accent.primary}10;
+  border: 1px solid ${props => props.theme.colors.accent.primary}30;
+  border-radius: ${props => props.theme.borderRadius.sm};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.md};
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const StatCard = styled.div`
+  background: ${props => props.theme.colors.background.secondary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: ${props => props.theme.borderRadius.md};
+  padding: ${props => props.theme.spacing.lg};
+  text-align: center;
+`;
+
+const StatValue = styled.div`
+  color: ${props => props.theme.colors.accent.primary};
+  font-size: 2rem;
+  font-weight: 700;
+`;
+
+const StatLabel = styled.div`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 0.9rem;
+  margin-top: ${props => props.theme.spacing.xs};
+`;
+
+const AdminManagementPage = () => {
+  const { user } = useAuth();
+  const { isMasterAdmin: isAdmin } = useUsageTracking();
+  const navigate = useNavigate();
+
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Redirect if not master admin
+  useEffect(() => {
+    if (user && !isMasterAdmin(user)) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  // Don't render if not master admin
+  if (!user || !isAdmin) {
+    return null;
+  }
+
+  const generateInviteCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let code = '';
+    for (let i = 0; i < 32; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const handleCreateInvite = async () => {
+    if (!inviteEmail || !inviteEmail.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    setInviteLink('');
+
+    try {
+      // For now, generate a local invite link
+      // In production, this would call a backend Cloud Function
+      const inviteCode = generateInviteCode();
+      const link = `${window.location.origin}/admin-invite?code=${inviteCode}`;
+
+      setInviteLink(link);
+      setSuccess(`Invite link created for ${inviteEmail}`);
+      toast.success('Admin invite created successfully!');
+
+      // TODO: In production, save to Firestore and send email
+      console.log('Admin Invite Created:', {
+        invitedEmail: inviteEmail,
+        invitedBy: user.email,
+        inviteCode: inviteCode,
+        inviteLink: link,
+        createdAt: new Date().toISOString()
+      });
+
+    } catch (err) {
+      console.error('Error creating invite:', err);
+      setError('Failed to create invite. Please try again.');
+      toast.error('Failed to create invite');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    toast.success('Link copied to clipboard!');
+  };
+
+  const handleSendEmail = () => {
+    // TODO: Implement email sending
+    toast.success('Email functionality coming soon!');
+  };
+
+  return (
+    <PageContainer>
+      <PageHeader>
+        <PageTitle>
+          <Crown size={40} />
+          Master Admin Management
+        </PageTitle>
+        <PageSubtitle>
+          Manage admin accounts and system administration
+        </PageSubtitle>
+      </PageHeader>
+
+      <MasterAdminCard />
+
+      <SectionGrid>
+        <Section>
+          <SectionTitle>
+            <Mail size={20} />
+            Create Admin Invite
+          </SectionTitle>
+
+          <InfoMessage>
+            <Shield size={16} />
+            Only Master Admins can create new admin accounts. Invites expire in 24 hours.
+          </InfoMessage>
+
+          <FormGroup>
+            <Label>Email Address</Label>
+            <Input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Enter email address to invite"
+              disabled={loading}
+            />
+          </FormGroup>
+
+          <Button
+            onClick={handleCreateInvite}
+            disabled={loading || !inviteEmail}
+          >
+            {loading ? <Clock size={16} /> : <Link size={16} />}
+            {loading ? 'Creating Invite...' : 'Create Invite Link'}
+          </Button>
+
+          {error && (
+            <ErrorMessage>
+              <AlertCircle size={16} />
+              {error}
+            </ErrorMessage>
+          )}
+
+          {success && (
+            <SuccessMessage>
+              <CheckCircle size={16} />
+              {success}
+            </SuccessMessage>
+          )}
+
+          {inviteLink && (
+            <InviteResult>
+              <h4>Invite Link Created!</h4>
+              <p>Send this link to {inviteEmail}:</p>
+
+              <InviteLink>
+                <span>{inviteLink}</span>
+                <CopyButton onClick={handleCopyLink}>
+                  <Copy size={12} />
+                  Copy
+                </CopyButton>
+              </InviteLink>
+
+              <p style={{ fontSize: '0.9em', color: '#666', marginTop: '8px' }}>
+                This link expires in 24 hours.
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <SecondaryButton onClick={handleSendEmail}>
+                  <Mail size={16} />
+                  Send Email
+                </SecondaryButton>
+              </div>
+            </InviteResult>
+          )}
+        </Section>
+
+        <Section>
+          <SectionTitle>
+            <Users size={20} />
+            Admin Statistics
+          </SectionTitle>
+
+          <StatsGrid>
+            <StatCard>
+              <StatValue>1</StatValue>
+              <StatLabel>Master Admins</StatLabel>
+            </StatCard>
+            <StatCard>
+              <StatValue>0</StatValue>
+              <StatLabel>Pending Invites</StatLabel>
+            </StatCard>
+            <StatCard>
+              <StatValue>0</StatValue>
+              <StatLabel>Active Invites</StatLabel>
+            </StatCard>
+          </StatsGrid>
+
+          <InfoMessage>
+            <Settings size={16} />
+            Admin statistics and management tools coming soon.
+          </InfoMessage>
+        </Section>
+      </SectionGrid>
+    </PageContainer>
+  );
+};
+
+export default AdminManagementPage;

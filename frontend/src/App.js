@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import styled from 'styled-components';
 import { Toaster } from 'react-hot-toast';
@@ -13,14 +13,11 @@ import Footer from './components/Layout/Footer';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import { PageLoadingSkeleton } from './components/UI/SkeletonLoader';
+import AuthScreen from './components/Auth/AuthScreen';
 
-// Critical components loaded immediately
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+// Critical components no longer needed at app level due to authentication gate
 
 // Lazy load non-critical pages for better performance
-const ParlayPage = React.lazy(() => import('./pages/ParlayPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const HistoryPage = React.lazy(() => import('./pages/HistoryPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
@@ -38,6 +35,9 @@ const BettingHubPage = React.lazy(() => import('./pages/BettingHubPage'));
 const AffiliateDisclosurePage = React.lazy(() => import('./pages/AffiliateDisclosurePage'));
 const TestLiveData = React.lazy(() => import('./pages/TestLiveData'));
 const AgentDashboardPage = React.lazy(() => import('./pages/AgentDashboardPage'));
+const MyBetsPage = React.lazy(() => import('./pages/MyBetsPage'));
+const AdminManagementPage = React.lazy(() => import('./pages/AdminManagementPage'));
+const AdminInvitePage = React.lazy(() => import('./pages/AdminInvitePage'));
 
 // MainContent wrapper to account for fixed header
 const MainContent = styled.main`
@@ -50,184 +50,70 @@ const MainContent = styled.main`
   }
 `;
 
-// ProtectedRoute component to handle authentication-required pages
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const location = useLocation();
+// Authentication gate now handles all routing - no need for separate ProtectedRoute/PublicRoute components
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!isAuthenticated) {
-    // Redirect to login page with the intended destination
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return children;
-};
-
-// PublicRoute component to handle login/register pages when user is authenticated
-const PublicRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-};
-
-// Main App component with AuthProvider
+// Main App component with Authentication Gate
 const AppContent = () => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, isAuthenticated } = useAuth();
 
+  // Show loading screen while checking authentication
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
+  // If user is not authenticated, show auth screen
+  if (!isAuthenticated || !user) {
+    return <AuthScreen />;
+  }
+
+  // User is authenticated, show main app
   return (
     <>
       <Header user={user} onLogout={logout} />
       <MainContent>
         <Suspense fallback={<PageLoadingSkeleton />}>
           <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/register" 
-            element={
-              <PublicRoute>
-                <RegisterPage />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/history" 
-            element={
-              <ProtectedRoute>
-                <HistoryPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/account" 
-            element={
-              <ProtectedRoute>
-                <AccountPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/betting-hub" 
-            element={
-              <ProtectedRoute>
-                <BettingHubPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/parlay"
-            element={<Navigate to="/live-sports" replace />}
-          />
-          <Route 
-            path="/test-live-data" 
-            element={<TestLiveData />}
-          />
-          <Route 
-            path="/subscription" 
-            element={<SubscriptionPage />}
-          />
-          <Route 
-            path="/live-sports" 
-            element={<LiveSportsPage />}
-          />
-          <Route 
-            path="/projections" 
-            element={<SportsProjectionsPage />}
-          />
-          <Route 
-            path="/analytics" 
-            element={<Navigate to="/betting-hub" replace />}
-          />
-          <Route 
-            path="/betting-data" 
-            element={<Navigate to="/betting-hub" replace />}
-          />
-          <Route 
-            path="/bet-tracking" 
-            element={<Navigate to="/betting-hub" replace />}
-          />
-          <Route 
-            path="/pick-em" 
-            element={<PickEmPageDemo />}
-          />
-          <Route 
-            path="/pick-em/pool/:poolId" 
-            element={<PoolDetailPage />}
-          />
-          <Route 
-            path="/fantasy-coming-soon" 
-            element={<FantasyComingSoonPage />}
-          />
-          <Route 
-            path="/live-scores" 
-            element={<LiveScoresPage />}
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/agents"
-            element={
-              <ProtectedRoute>
-                <AgentDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/affiliate-disclosure"
-            element={<AffiliateDisclosurePage />}
-          />
-          {/* Catch-all route for 404 errors */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
+            {/* Default route - redirect to dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* All routes now require authentication */}
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/betting-hub" element={<BettingHubPage />} />
+            <Route path="/my-bets" element={<MyBetsPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/live-sports" element={<LiveSportsPage />} />
+            <Route path="/projections" element={<SportsProjectionsPage />} />
+            <Route path="/pick-em" element={<PickEmPageDemo />} />
+            <Route path="/pick-em/pool/:poolId" element={<PoolDetailPage />} />
+            <Route path="/fantasy-coming-soon" element={<FantasyComingSoonPage />} />
+            <Route path="/live-scores" element={<LiveScoresPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin-management" element={<AdminManagementPage />} />
+            <Route path="/admin-invite" element={<AdminInvitePage />} />
+            <Route path="/agents" element={<AgentDashboardPage />} />
+            <Route path="/affiliate-disclosure" element={<AffiliateDisclosurePage />} />
+            <Route path="/test-live-data" element={<TestLiveData />} />
+
+            {/* Redirect legacy routes */}
+            <Route path="/parlay" element={<Navigate to="/live-sports" replace />} />
+            <Route path="/analytics" element={<Navigate to="/betting-hub" replace />} />
+            <Route path="/betting-data" element={<Navigate to="/betting-hub" replace />} />
+            <Route path="/bet-tracking" element={<Navigate to="/betting-hub" replace />} />
+
+            {/* Legacy auth routes - redirect to dashboard since user is already authenticated */}
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+
+            {/* 404 catch-all */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
       </MainContent>
       <Footer />
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,

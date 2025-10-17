@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
+import { canPerformAction, getUsageSummary } from '../services/usageService';
 
 export const useSubscription = () => {
   const { user } = useAuth();
@@ -69,7 +70,7 @@ export const useSubscription = () => {
     return tierLevels[subscription.tier] >= tierLevels[requiredTier];
   };
 
-  const canPerformAction = (action) => {
+  const canPerformAction = async (action) => {
     // Pro and Elite users have unlimited access
     if (subscription.tier !== 'free') {
       return {
@@ -80,37 +81,38 @@ export const useSubscription = () => {
       };
     }
 
-    // Free tier limits
-    const actionMap = {
-      evaluation: {
-        used: subscription.usage.evaluations_today,
-        limit: subscription.limits.daily_evaluations
-      },
-      odds_comparison: {
-        used: subscription.usage.comparisons_today,
-        limit: subscription.limits.daily_odds_comparisons
-      },
-      bet_tracking: {
-        used: subscription.usage.total_bets,
-        limit: subscription.limits.max_bets
-      }
-    };
+    // Use new usage service for free tier limits
+    try {
+      const actionMap = {
+        evaluation: 'aiParlayEvaluation',
+        odds_comparison: 'oddsComparison',
+        bet_tracking: 'betTracking',
+        live_games: 'liveGames'
+      };
 
-    const actionData = actionMap[action];
-    if (!actionData) {
-      return { allowed: true, remaining: 0, limit: 0 };
+      const serviceAction = actionMap[action] || action;
+      const result = await canPerformAction(user?.uid, serviceAction, { tier: subscription.tier });
+
+      return {
+        allowed: result.allowed,
+        remaining: result.allowed ? (result.limit - result.used) : 0,
+        limit: result.limit || 0,
+        used: result.used || 0,
+        unlimited: result.unlimited || false,
+        message: result.message,
+        resetPeriod: result.resetPeriod
+      };
+    } catch (error) {
+      console.error('Error checking action permission:', error);
+      // Fallback to allow action if service fails
+      return {
+        allowed: true,
+        remaining: 0,
+        limit: 0,
+        unlimited: false,
+        message: 'Usage check failed'
+      };
     }
-
-    const allowed = actionData.used < actionData.limit;
-    const remaining = actionData.limit - actionData.used;
-
-    return {
-      allowed,
-      remaining: Math.max(0, remaining),
-      limit: actionData.limit,
-      used: actionData.used,
-      unlimited: false
-    };
   };
 
   const trackUsage = async (action) => {

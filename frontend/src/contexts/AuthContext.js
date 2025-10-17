@@ -458,29 +458,58 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Firebase email/password registration
-  const registerWithFirebase = async (userData) => {
+  const registerWithFirebase = async (email, password, firstName, lastName, displayName = null) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
+      // Auto-generate display name if not provided
+      let finalDisplayName = displayName;
+      if (!finalDisplayName || finalDisplayName.trim() === '') {
+        finalDisplayName = generateDisplayName(firstName, lastName, email);
+      }
+
       // Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        userData.email, 
-        userData.password
+        auth,
+        email,
+        password
       );
-      
+
+      // Create full name from first and last name
+      const fullName = `${firstName} ${lastName}`;
+
+      // Update Firebase Auth profile
+      await updateFirebaseProfile(userCredential.user, {
+        displayName: finalDisplayName
+      });
+
+      // Create user document in Firestore
+      const { authService } = await import('../services/firebase/authService');
+      await authService.createUserDocument(userCredential.user.uid, {
+        firstName: firstName,
+        lastName: lastName,
+        fullName: fullName,
+        displayName: finalDisplayName,
+        email: email,
+        photoURL: null,
+        provider: 'email'
+      });
+
       // Get Firebase ID token for authentication
       const idToken = await userCredential.user.getIdToken();
 
-      // Create user object from Firebase data
+      // Create user object for state
       const user = {
         uid: userCredential.user.uid,
-        name: userData.name,
-        email: userCredential.user.email,
-        provider: 'email',
-        terms_accepted: userData.terms_accepted,
-        marketing_emails: userData.marketing_emails
+        firstName: firstName,
+        lastName: lastName,
+        fullName: fullName,
+        displayName: finalDisplayName,
+        name: finalDisplayName, // For backward compatibility
+        email: email,
+        photoURL: null,
+        provider: 'email'
       };
 
       dispatch({
@@ -496,15 +525,26 @@ export const AuthProvider = ({ children }) => {
       storeTokens(idToken, null, false);
       storeUser(user, false);
 
-      toast.success(`Welcome to PrizmBets, ${user.name}!`);
+      toast.success(`Welcome to PrizmBets, ${finalDisplayName}!`);
       return { success: true };
-      
+
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.message || 'Registration failed';
+      const errorMessage = error.code === 'auth/email-already-in-use'
+        ? 'This email is already registered'
+        : error.code === 'auth/weak-password'
+        ? 'Password is too weak'
+        : error.message || 'Registration failed';
+
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
+  };
+
+  // Helper function to generate display name
+  const generateDisplayName = (firstName, lastName, email) => {
+    // Option 1: Use first name + last initial
+    return `${firstName}${lastName.charAt(0)}`;
   };
 
   // Firebase email/password login
@@ -530,13 +570,35 @@ export const AuthProvider = ({ children }) => {
         id_token: idToken
       };
 
-      // Create user object from Firebase data
-      const user = {
-        uid: userCredential.user.uid,
-        name: userCredential.user.displayName || userCredential.user.email.split('@')[0],
-        email: userCredential.user.email,
-        provider: 'email'
-      };
+      // Get complete user data from Firestore
+      const { authService } = await import('../services/firebase/authService');
+      const firestoreResult = await authService.getUserData(userCredential.user.uid);
+
+      let user;
+      if (firestoreResult.success) {
+        // Use Firestore data with Firebase Auth fallbacks
+        const firestoreData = firestoreResult.data;
+        user = {
+          uid: userCredential.user.uid,
+          displayName: firestoreData.displayName || userCredential.user.displayName || userCredential.user.email.split('@')[0],
+          fullName: firestoreData.fullName || null,
+          name: firestoreData.displayName || userCredential.user.displayName || userCredential.user.email.split('@')[0], // For backward compatibility
+          email: userCredential.user.email,
+          photoURL: firestoreData.photoURL || userCredential.user.photoURL || null,
+          provider: 'email',
+          ...firestoreData // Include all other Firestore fields
+        };
+      } else {
+        // Fallback to Firebase Auth data only
+        user = {
+          uid: userCredential.user.uid,
+          displayName: userCredential.user.displayName || userCredential.user.email.split('@')[0],
+          name: userCredential.user.displayName || userCredential.user.email.split('@')[0],
+          email: userCredential.user.email,
+          photoURL: userCredential.user.photoURL || null,
+          provider: 'email'
+        };
+      }
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -567,6 +629,22 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
   };
 
+  // Update user function for local state updates
+  const updateUser = (updates) => {
+    dispatch({
+      type: AUTH_ACTIONS.LOGIN_SUCCESS,
+      payload: {
+        user: { ...state.user, ...updates },
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken
+      }
+    });
+
+    // Update stored user data
+    const rememberMe = localStorage.getItem('auth_token') !== null;
+    storeUser({ ...state.user, ...updates }, rememberMe);
+  };
+
   const value = {
     ...state,
     login,
@@ -578,7 +656,8 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     changePassword,
     refreshTokens,
-    clearError
+    clearError,
+    updateUser
   };
 
   return (

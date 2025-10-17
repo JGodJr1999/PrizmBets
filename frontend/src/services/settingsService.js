@@ -8,6 +8,7 @@ import { db, auth } from '../config/firebase';
 const DEFAULT_SETTINGS = {
   profile: {
     displayName: '',
+    fullName: '',
     location: '',
     avatar: null,
     lastUpdated: null

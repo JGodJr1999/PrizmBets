@@ -214,17 +214,41 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
           price: 0,
           description: 'Perfect for getting started with sports betting analysis',
           features: [
-            '3 AI parlay evaluations per day',
-            '10 odds comparisons per day',
+            '3 AI parlay evaluations per week',
+            '1 odds comparison per day',
             'Basic AI analysis',
-            'Track up to 50 bets',
-            'View 5 concurrent live games',
-            'Basic analytics (30 days)',
+            'Track up to 5 bets per week',
+            'View 5 live games',
+            'Basic analytics only',
             'Community support'
           ],
+          aiParlayEvaluations: {
+            limit: 3,
+            period: 'week',
+            description: '3 AI parlay evaluations per week'
+          },
+          oddsComparison: {
+            limit: 1,
+            period: 'day',
+            description: '1 odds comparison per day'
+          },
+          betTracking: {
+            limit: 5,
+            period: 'week',
+            description: 'Track up to 5 bets per week'
+          },
+          analytics: {
+            type: 'basic',
+            description: 'Basic analytics'
+          },
+          liveGames: {
+            limit: 5,
+            description: 'View 5 live games'
+          },
+          // Legacy fields for backward compatibility
           daily_evaluations: 3,
-          daily_odds_comparisons: 10,
-          max_bets: 50,
+          daily_odds_comparisons: 1,
+          max_bets: 5,
           concurrent_games: 5,
           analytics_days: 30
         },
@@ -235,14 +259,13 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
           description: 'Everything serious bettors need to gain an edge',
           popular: true,
           features: [
-            'Unlimited parlay evaluations',
+            '35 AI parlay evaluations per month',
             'Unlimited odds comparisons',
+            'AI\'s Top 5 picks (5 total across all sports)',
             'All 8+ sportsbooks',
-            'Automated email bet tracking',
-            'Unlimited bet tracking',
-            'Watch 30 concurrent live games',
+            'In-app bet slip for tracking',
+            'Watch ALL available live games',
             'Advanced AI analysis',
-            'Lifetime analytics',
             '10 custom alerts',
             'Bankroll management tools',
             'Weekly AI insights email',
@@ -250,12 +273,43 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
             'Ad-free experience',
             'Clean exports (no watermarks)'
           ],
-          daily_evaluations: -1, // unlimited
+          aiParlayEvaluations: {
+            limit: 35,
+            period: 'month',
+            description: '35 AI parlay evaluations per month'
+          },
+          oddsComparison: {
+            limit: -1,
+            period: 'unlimited',
+            description: 'Unlimited odds comparisons'
+          },
+          aiTop5: {
+            enabled: true,
+            type: 'total',
+            limit: 5,
+            description: 'AI\'s Top 5 picks (5 total across all sports)'
+          },
+          betTracking: {
+            type: 'in-app',
+            limit: -1,
+            description: 'In-app bet slip for tracking'
+          },
+          liveGames: {
+            limit: -1,
+            description: 'Watch ALL available live games'
+          },
+          analytics: {
+            type: 'advanced',
+            lifetime: false,
+            description: 'Advanced analytics (not lifetime)'
+          },
+          // Legacy fields for backward compatibility
+          daily_evaluations: -1,
           daily_odds_comparisons: -1,
           max_bets: -1,
-          concurrent_games: 30,
+          concurrent_games: -1,
           custom_alerts: 10,
-          analytics_days: -1
+          analytics_days: 365 // 1 year of data, not lifetime
         },
         elite: {
           name: 'Elite',
@@ -264,6 +318,8 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
           description: 'For serious bettors who treat betting as a business',
           features: [
             'Everything in Pro',
+            'AI\'s Top 5 picks PER SPORT (5 picks each sport)',
+            'Unlimited AI parlay evaluations',
             'Daily AI +EV recommendations (3-5/day)',
             'Real-time steam moves tracker',
             'Prop betting edge finder',
@@ -273,18 +329,50 @@ const SubscriptionTiers = ({ currentUser, onSubscriptionChange }) => {
             'Custom betting models & backtest',
             'Multi-account tracking',
             'Unlimited custom alerts',
+            'Premium analytics with LIFETIME stats',
             'Sharp odds lines (Pinnacle/Circa)',
             'VIP Discord channel',
             'Priority live chat support (12hr)',
             'Monthly strategy consultation call',
             'Early access to new features'
           ],
+          aiParlayEvaluations: {
+            limit: -1,
+            period: 'unlimited',
+            description: 'Unlimited AI parlay evaluations'
+          },
+          oddsComparison: {
+            limit: -1,
+            period: 'unlimited',
+            description: 'Unlimited odds comparisons'
+          },
+          aiTop5: {
+            enabled: true,
+            type: 'per-sport',
+            limit: 5,
+            description: 'AI\'s Top 5 picks PER SPORT (5 picks each sport)'
+          },
+          betTracking: {
+            type: 'in-app',
+            limit: -1,
+            description: 'In-app bet slip for tracking'
+          },
+          liveGames: {
+            limit: -1,
+            description: 'Watch ALL available live games'
+          },
+          analytics: {
+            type: 'premium',
+            lifetime: true,
+            description: 'Premium analytics with LIFETIME stats'
+          },
+          // Legacy fields for backward compatibility
           daily_evaluations: -1,
           daily_odds_comparisons: -1,
           max_bets: -1,
-          concurrent_games: -1, // unlimited
-          custom_alerts: -1, // unlimited
-          analytics_days: -1,
+          concurrent_games: -1,
+          custom_alerts: -1,
+          analytics_days: -1, // lifetime
           ai_recommendations: true,
           steam_moves: true,
           vip_community: true

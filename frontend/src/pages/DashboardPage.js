@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { BarChart3, TrendingUp, TrendingDown, Target, DollarSign, Clock } from 'lucide-react';
+import MasterUserCard from '../components/MasterUser/MasterUserCard';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const DashboardContainer = styled.div`
   padding: ${props => props.theme.spacing.lg};
@@ -157,6 +159,8 @@ const EmptyState = styled.div`
 `;
 
 const DashboardPage = () => {
+  const { isMasterUser } = useUsageTracking();
+
   // Mock data - replace with real data from API
   const stats = {
     totalParlays: 24,
@@ -198,7 +202,9 @@ const DashboardPage = () => {
         <BarChart3 size={32} />
         Dashboard
       </PageTitle>
-      
+
+      {isMasterUser && <MasterUserCard />}
+
       <StatsGrid>
         <StatCard>
           <StatHeader>

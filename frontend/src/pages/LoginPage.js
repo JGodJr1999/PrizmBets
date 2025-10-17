@@ -276,8 +276,9 @@ const LoginPage = () => {
     }
   }, []);
   
-  // Get the intended destination from location state or default to home
-  const from = location.state?.from?.pathname || '/';
+  // Get the intended destination from location state, returnUrl, or default to home
+  const returnUrl = sessionStorage.getItem('returnUrl');
+  const from = location.state?.returnUrl || returnUrl || location.state?.from?.pathname || '/';
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -315,8 +316,18 @@ const LoginPage = () => {
     try {
       // Register/login the user with Firebase data
       const result = await registerWithFirebase(userData);
-      
+
       if (result.success) {
+        // Clear returnUrl from sessionStorage if it exists
+        if (returnUrl) {
+          sessionStorage.removeItem('returnUrl');
+        }
+
+        // Show success message for switch user
+        if (location.state?.switching) {
+          toast.success('Successfully switched accounts!');
+        }
+
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -342,6 +353,16 @@ const LoginPage = () => {
     const result = await loginWithFirebaseEmail(formData.email, formData.password, formData.rememberMe);
     
     if (result.success) {
+      // Clear returnUrl from sessionStorage if it exists
+      if (returnUrl) {
+        sessionStorage.removeItem('returnUrl');
+      }
+
+      // Show success message for switch user
+      if (location.state?.switching) {
+        toast.success('Successfully switched accounts!');
+      }
+
       // Redirect to intended destination
       navigate(from, { replace: true });
     }
@@ -356,7 +377,14 @@ const LoginPage = () => {
           PrizmBets
         </Logo>
         
-        <Title>Welcome Back</Title>
+        <Title>{location.state?.switching ? 'Switch to Different Account' : 'Welcome Back'}</Title>
+
+        {location.state?.switching && (
+          <SecurityWarning style={{ marginBottom: '1rem' }}>
+            <Info size={14} />
+            <span>You've been signed out. Please sign in with a different account.</span>
+          </SecurityWarning>
+        )}
         
         {/* Add social auth buttons for easier sign-in */}
         <SocialAuthButtons onSuccess={handleSocialAuth} isLoading={isLoading} />

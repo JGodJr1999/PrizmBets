@@ -23,14 +23,14 @@ const googleProvider = new GoogleAuthProvider();
 // Create user document in Firestore
 const createUserDocument = async (user, additionalData = {}) => {
   if (!user) return;
-  
+
   const userRef = doc(db, 'users', user.uid);
   const userSnap = await getDoc(userRef);
-  
+
   if (!userSnap.exists()) {
     const { displayName, email, photoURL } = user;
     const createdAt = serverTimestamp();
-    
+
     try {
       await setDoc(userRef, {
         uid: user.uid,
@@ -56,7 +56,42 @@ const createUserDocument = async (user, additionalData = {}) => {
       console.error('Error creating user document:', error);
     }
   }
-  
+
+  return userRef;
+};
+
+// Create user document by UID (for enhanced registration)
+const createUserDocumentByUid = async (uid, userData) => {
+  if (!uid) return;
+
+  const userRef = doc(db, 'users', uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    try {
+      await setDoc(userRef, {
+        uid: uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        subscription: 'free',
+        preferences: {
+          favoriteTeams: [],
+          favoriteSports: [],
+          notifications: true
+        },
+        stats: {
+          totalBets: 0,
+          winRate: 0,
+          totalWinnings: 0
+        },
+        ...userData
+      });
+    } catch (error) {
+      console.error('Error creating user document:', error);
+      throw error;
+    }
+  }
+
   return userRef;
 };
 
@@ -220,7 +255,10 @@ export const authService = {
   // Subscribe to auth state changes
   onAuthStateChange: (callback) => {
     return onAuthStateChanged(auth, callback);
-  }
+  },
+
+  // Create user document by UID (for enhanced registration)
+  createUserDocument: createUserDocumentByUid
 };
 
 export default authService;

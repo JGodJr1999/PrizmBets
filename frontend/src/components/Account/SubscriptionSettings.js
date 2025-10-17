@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Crown, CreditCard, Calendar, TrendingUp, Zap, Check, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import UsageDisplay from '../Usage/UsageDisplay';
 
 const SubscriptionContainer = styled.div`
   display: flex;
@@ -236,11 +237,11 @@ const SubscriptionSettings = ({ user }) => {
       price: 0,
       period: 'forever',
       features: [
-        '3 AI parlay evaluations per day',
-        '10 odds comparisons per day',
-        'Track up to 50 bets',
-        'Basic analytics (30 days)',
-        'View 5 concurrent live games',
+        '3 AI parlay evaluations per week',
+        '1 odds comparison per day',
+        'Track up to 5 bets per week',
+        'Basic analytics only',
+        'View 5 live games',
         'Community support'
       ]
     },
@@ -252,17 +253,18 @@ const SubscriptionSettings = ({ user }) => {
       annualPrice: 149.99,
       recommended: true,
       features: [
-        'Unlimited AI parlay evaluations',
+        '35 AI parlay evaluations per month',
         'Unlimited odds comparisons',
+        'AI\'s Top 5 picks (5 total across all sports)',
         'All 8+ sportsbooks',
-        'Automated email bet tracking',
-        'Unlimited bet tracking',
-        'Watch 30 concurrent live games',
+        'In-app bet slip for tracking',
+        'Watch ALL available live games',
         'Advanced AI analysis',
-        'Lifetime analytics',
         '10 custom alerts',
         'Bankroll management tools',
+        'Weekly AI insights email',
         'Priority email support (24-48hr)',
+        'Ad-free experience',
         'Clean exports (no watermarks)'
       ]
     },
@@ -274,6 +276,8 @@ const SubscriptionSettings = ({ user }) => {
       annualPrice: 249.99,
       features: [
         'Everything in Pro',
+        'AI\'s Top 5 picks PER SPORT (5 picks each sport)',
+        'Unlimited AI parlay evaluations',
         'Daily AI +EV recommendations (3-5/day)',
         'Real-time steam moves tracker',
         'Prop betting edge finder',
@@ -283,10 +287,12 @@ const SubscriptionSettings = ({ user }) => {
         'Custom betting models & backtest',
         'Multi-account tracking',
         'Unlimited custom alerts',
+        'Premium analytics with LIFETIME stats',
         'Sharp odds lines (Pinnacle/Circa)',
         'VIP Discord channel',
         'Priority live chat support (12hr)',
-        'Monthly strategy consultation call'
+        'Monthly strategy consultation call',
+        'Early access to new features'
       ]
     }
   ];
@@ -324,43 +330,9 @@ const SubscriptionSettings = ({ user }) => {
           }
         </PlanDescription>
 
-        {currentPlan === 'free' && (
-          <UsageSection>
-            <UsageStat>
-              <UsageLabel>
-                <TrendingUp size={16} />
-                AI Evaluations
-              </UsageLabel>
-              <UsageValue>{usage.evaluations.used} / {usage.evaluations.limit}</UsageValue>
-              <UsageBar>
-                <UsageProgress percentage={getUsagePercentage(usage.evaluations.used, usage.evaluations.limit)} />
-              </UsageBar>
-            </UsageStat>
-
-            <UsageStat>
-              <UsageLabel>
-                <Zap size={16} />
-                Odds Comparisons
-              </UsageLabel>
-              <UsageValue>{usage.comparisons.used} / {usage.comparisons.limit}</UsageValue>
-              <UsageBar>
-                <UsageProgress percentage={getUsagePercentage(usage.comparisons.used, usage.comparisons.limit)} />
-              </UsageBar>
-            </UsageStat>
-
-            <UsageStat>
-              <UsageLabel>
-                <CreditCard size={16} />
-                Data Uploads
-              </UsageLabel>
-              <UsageValue>{usage.uploads.used} / {usage.uploads.limit}</UsageValue>
-              <UsageBar>
-                <UsageProgress percentage={getUsagePercentage(usage.uploads.used, usage.uploads.limit)} />
-              </UsageBar>
-            </UsageStat>
-          </UsageSection>
-        )}
       </CurrentPlanCard>
+
+      <UsageDisplay />
 
       <div>
         <SectionTitle>
