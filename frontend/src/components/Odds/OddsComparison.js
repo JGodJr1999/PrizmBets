@@ -4,6 +4,8 @@ import { ExternalLink, TrendingUp, TrendingDown, Clock, AlertCircle, Star, Info 
 import { apiService } from '../../services/api';
 import LoadingSpinner from '../UI/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { trackSportsbookClick } from '../../services/analyticsService';
 
 const ComparisonContainer = styled.div`
   background: ${props => props.theme.colors.background.card};
@@ -238,6 +240,7 @@ const DisclaimerBox = styled.div`
 `;
 
 const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
+  const { user } = useAuth();
   const [oddsData, setOddsData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -283,12 +286,17 @@ const OddsComparison = ({ team, betType, sport = 'nfl', amount = 100 }) => {
       'espnbet': 'https://espnbet.com',
       'fanatics': 'https://fanatics.com/betting'
     };
-    
+
     const sportsbookUrl = sportsbookUrls[sportsbook.toLowerCase()] || `https://www.${sportsbook.toLowerCase()}.com`;
-    
+
+    // Track the sportsbook click for analytics
+    if (user?.uid) {
+      trackSportsbookClick(sportsbook, user.uid, 'odds-comparison');
+    }
+
     // Open sportsbook homepage in new tab
     window.open(sportsbookUrl, '_blank', 'noopener,noreferrer');
-    
+
     // Show informational message
     toast.info(`Opening ${sportsbook.toUpperCase()} - Odds for informational purposes only`);
   };

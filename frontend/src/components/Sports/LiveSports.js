@@ -8,6 +8,8 @@ import SportTabs from './SportTabs';
 import SportCard from './SportCard';
 import { GameCardSkeleton, SportSelectorSkeleton, HeaderSkeleton } from '../UI/SkeletonLoader';
 import { apiService } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { trackSportsbookClick } from '../../services/analyticsService';
 
 const SportsContainer = styled.div`
   max-width: 1200px;
@@ -687,6 +689,7 @@ const apiCache = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 
 const LiveSports = () => {
+  const { user } = useAuth();
   const [selectedSport, setSelectedSport] = useState('all');
   const [activeTab, setActiveTab] = useState('active');
   const [games, setGames] = useState([]);
@@ -988,12 +991,17 @@ const LiveSports = () => {
       'espnbet': 'https://espnbet.com',
       'fanatics': 'https://fanatics.com/betting'
     };
-    
+
     const sportsbookUrl = sportsbookUrls[sportsbook.toLowerCase()] || `https://www.${sportsbook.toLowerCase()}.com`;
-    
+
+    // Track the sportsbook click for analytics
+    if (user?.uid) {
+      trackSportsbookClick(sportsbook, user.uid, 'live-odds');
+    }
+
     // Open sportsbook homepage in new tab
     window.open(sportsbookUrl, '_blank');
-    
+
     // Show informational message
     toast.info(`Opening ${sportsbook.toUpperCase()} - Remember to bet responsibly!`);
   };
@@ -1061,12 +1069,17 @@ const LiveSports = () => {
     };
     const sportsbooks = Object.keys(sportsbookUrls);
     const randomSportsbook = sportsbooks[Math.floor(Math.random() * sportsbooks.length)];
-    
+
     const sportsbookUrl = sportsbookUrls[randomSportsbook];
-    
+
+    // Track the sportsbook click for analytics
+    if (user?.uid) {
+      trackSportsbookClick(randomSportsbook, user.uid, 'prop-bet');
+    }
+
     // Open sportsbook homepage in new tab
     window.open(sportsbookUrl, '_blank');
-    
+
     // Show informational message
     toast.info(`Opening ${randomSportsbook.toUpperCase()} - Remember to bet responsibly!`);
   };

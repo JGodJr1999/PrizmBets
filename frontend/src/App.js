@@ -41,6 +41,7 @@ const AgentDashboardPage = React.lazy(() => import('./pages/AgentDashboardPage')
 const MyBetsPage = React.lazy(() => import('./pages/MyBetsPage'));
 const AdminManagementPage = React.lazy(() => import('./pages/AdminManagementPage'));
 const AdminInvitePage = React.lazy(() => import('./pages/AdminInvitePage'));
+const AdminAnalyticsPage = React.lazy(() => import('./pages/AdminAnalyticsPage'));
 
 // MainContent wrapper to account for fixed header
 const MainContent = styled.main`
@@ -108,6 +109,7 @@ const AppContent = () => {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin-management" element={<AdminManagementPage />} />
             <Route path="/admin-invite" element={<AdminInvitePage />} />
+            <Route path="/admin-analytics" element={<AdminAnalyticsPage />} />
             <Route path="/agents" element={<AgentDashboardPage />} />
             <Route path="/affiliate-disclosure" element={<AffiliateDisclosurePage />} />
             <Route path="/test-live-data" element={<TestLiveData />} />

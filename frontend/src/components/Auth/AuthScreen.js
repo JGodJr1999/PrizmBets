@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain } from 'lucide-react';
+// Brain icon temporarily removed - new logo coming soon
+// import { Brain } from 'lucide-react';
 import SignInForm from './SignInForm';
 import SignUpForm from './SignUpForm';
 
@@ -95,7 +96,8 @@ const WelcomeTitle = styled.h1`
   gap: ${props => props.theme.spacing.sm};
 `;
 
-const WelcomeIcon = styled.div`
+// WelcomeIcon temporarily removed - new logo coming soon
+/* const WelcomeIcon = styled.div`
   width: 50px;
   height: 50px;
   background: linear-gradient(135deg, ${props => props.theme.colors.accent.primary} 0%, ${props => props.theme.colors.accent.primary}CC 100%);
@@ -105,7 +107,7 @@ const WelcomeIcon = styled.div`
   justify-content: center;
   color: ${props => props.theme.colors.background.primary};
   box-shadow: 0 8px 32px ${props => props.theme.colors.accent.primary}40;
-`;
+`; */
 
 const WelcomeSubtitle = styled.p`
   color: ${props => props.theme.colors.text.secondary};
@@ -169,8 +171,11 @@ const AuthScreen = () => {
       <AuthHeader>
         <HeaderContent>
           <Logo>
-            <Brain size={28} />
-            <LogoText>PrizmBets</LogoText>
+            {/* Logo temporarily removed - new logo coming soon */}
+            <LogoText>
+              <span>Prizm</span>
+              <span>Bets</span>
+            </LogoText>
           </Logo>
         </HeaderContent>
       </AuthHeader>
@@ -185,9 +190,6 @@ const AuthScreen = () => {
           {/* Welcome section */}
           <WelcomeSection>
             <WelcomeTitle>
-              <WelcomeIcon>
-                <Brain size={24} />
-              </WelcomeIcon>
               {activeTab === 'signin' ? 'Welcome Back' : 'Join PrizmBets'}
             </WelcomeTitle>
             <WelcomeSubtitle>

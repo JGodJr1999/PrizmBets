@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, User, Menu, X, Trophy, Star, Crown, DollarSign, Home, Lock } from 'lucide-react';
-import prizmLogo from '../../assets/images/prizm-logo.png';
+// Logo temporarily removed - new logo coming soon
+// import prizmLogo from '../../assets/images/prizm-logo.png';
 import UserColumnMenu from './UserColumnMenu';
 import { useUsageTracking } from '../../hooks/useUsageTracking';
 
@@ -49,7 +50,8 @@ const Logo = styled.div`
   }
 `;
 
-const LogoImage = styled.img`
+// Logo image component temporarily removed
+/* const LogoImage = styled.img`
   width: clamp(32px, 4vw, 40px);
   height: clamp(32px, 4vw, 40px);
   object-fit: contain;
@@ -59,7 +61,7 @@ const LogoImage = styled.img`
     width: 34px;
     height: 34px;
   }
-`;
+`; */
 
 const LogoText = styled.span`
   display: flex;
@@ -360,17 +362,21 @@ const BetaTag = styled.span`
 const CrownIcon = styled.span`
   font-size: 20px;
   line-height: 1;
-  cursor: default;
+  cursor: pointer;
   color: #ffd700;
   padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
   border-radius: ${props => props.theme.borderRadius.md};
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+  border: 1px solid rgba(255, 215, 0, 0.3);
 
   &:hover {
-    background: rgba(255, 215, 0, 0.1);
-    transform: scale(1.05);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
   }
 
   @media (max-width: ${props => props.theme.breakpoints.lg}) {
@@ -412,7 +418,7 @@ const Header = ({ user = null, onLogout }) => {
     <HeaderContainer>
       <HeaderContent>
         <Logo onClick={handleLogoClick}>
-          <LogoImage src={prizmLogo} alt="PrizmBets Logo" />
+          {/* Logo image temporarily removed - new logo coming soon */}
           <LogoText>
             <span>Prizm</span>
             <span>Bets</span>
@@ -450,21 +456,6 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
 
 
-          {/* Master Admin only navigation */}
-          {isMasterAdmin && (
-            <NavItem
-              active={isActive('/admin-management')}
-              onClick={() => handleNavigation('/admin-management')}
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1))',
-                border: '1px solid rgba(255, 215, 0, 0.3)',
-                position: 'relative'
-              }}
-            >
-              <Crown size={16} />
-              Admin Management
-            </NavItem>
-          )}
 
           <NavItem
             active={isActive('/projections')}
@@ -504,7 +495,14 @@ const Header = ({ user = null, onLogout }) => {
           </NavItem>
 
           {/* Master Admin Crown Icon between NFL Fantasy and User */}
-          {isMasterAdmin && <CrownIcon>👑</CrownIcon>}
+          {isMasterAdmin && (
+            <CrownIcon
+              onClick={() => handleNavigation('/admin-management')}
+              title="Master Admin Dashboard"
+            >
+              👑
+            </CrownIcon>
+          )}
 
           {user?.role === 'admin' && (
             <NavItem

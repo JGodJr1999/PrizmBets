@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { Crown, Mail, Link, Copy, Users, Settings, Shield, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Crown, Mail, Link, Copy, Users, Settings, Shield, AlertCircle, CheckCircle, Clock, BarChart3 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 import { isMasterAdmin } from '../services/masterAdminService';
-import MasterAdminCard from '../components/MasterAdmin/MasterAdminCard';
 import toast from 'react-hot-toast';
+import {
+  collection,
+  getDocs
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
 
 const PageContainer = styled.div`
   max-width: 1400px;
@@ -234,11 +239,389 @@ const StatLabel = styled.div`
   margin-top: ${props => props.theme.spacing.xs};
 `;
 
+// Analytics Tab Styled Components
+const AnalyticsContainer = styled.div`
+  padding: 20px;
+`;
+
+const AnalyticsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AnalyticsCard = styled.div`
+  background: ${props => props.theme.colors.background.secondary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const CardTitle = styled.h3`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const MetricsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+`;
+
+const MetricItem = styled.div`
+  text-align: center;
+  padding: 15px;
+  background: ${props => props.theme.colors.background.hover};
+  border-radius: 8px;
+  border: 1px solid ${props => props.theme.colors.border.secondary};
+`;
+
+const MetricValue = styled.div`
+  color: ${props => props.theme.colors.accent.primary};
+  font-size: 1.5rem;
+  font-weight: 700;
+`;
+
+const MetricLabel = styled.div`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 0.85rem;
+  margin-top: 5px;
+`;
+
+const SportsbookRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: ${props => props.theme.colors.background.hover};
+  border-radius: 8px;
+  border: 1px solid ${props => props.theme.colors.border.secondary};
+`;
+
+const FeatureRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: ${props => props.theme.colors.background.hover};
+  border-radius: 8px;
+  border: 1px solid ${props => props.theme.colors.border.secondary};
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+`;
+
+const ErrorContainer = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: ${props => props.theme.colors.status.error};
+`;
+
+const RetryButton = styled.button`
+  background: ${props => props.theme.colors.accent.primary};
+  color: ${props => props.theme.colors.background.primary};
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+
+  &:hover {
+    background: ${props => props.theme.colors.accent.secondary};
+  }
+`;
+
+// Tab System Components
+const TabContainer = styled.div`
+  margin-bottom: ${props => props.theme.spacing.xl};
+`;
+
+const TabBar = styled.div`
+  display: flex;
+  background: ${props => props.theme.colors.background.card};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+`;
+
+const Tab = styled.button`
+  flex: 1;
+  padding: 16px 24px;
+  background: ${props => props.active
+    ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1))'
+    : 'transparent'};
+  border: none;
+  border-right: 1px solid ${props => props.theme.colors.border.primary};
+  color: ${props => props.active
+    ? props.theme.colors.text.primary
+    : props.theme.colors.text.secondary};
+  font-weight: ${props => props.active ? '600' : '400'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover {
+    background: ${props => props.active
+      ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.15))'
+      : 'rgba(255, 255, 255, 0.05)'};
+  }
+`;
+
+const TabContent = styled.div`
+  background: ${props => props.theme.colors.background.card};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  min-height: 600px;
+`;
+
+// Analytics Data Functions
+const getAdminAnalytics = async () => {
+  try {
+    // Get all users
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const totalUsers = users.length;
+
+    // Calculate active today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const activeToday = users.filter(u => {
+      const lastActive = u.lastActive?.toDate();
+      return lastActive && lastActive >= today;
+    }).length;
+
+    // Calculate new users
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const newThisWeek = users.filter(u => {
+      const created = u.createdAt?.toDate();
+      return created && created >= weekAgo;
+    }).length;
+
+    const newThisMonth = users.filter(u => {
+      const created = u.createdAt?.toDate();
+      return created && created >= monthAgo;
+    }).length;
+
+    // Calculate subscription breakdown
+    const starterCount = users.filter(u => u.subscription?.tier === 'starter').length;
+    const proCount = users.filter(u => u.subscription?.tier === 'pro').length;
+    const eliteCount = users.filter(u => u.subscription?.tier === 'elite' || u.subscription?.tier === 'premium').length;
+
+    // Get sportsbook clicks
+    let sportsbookClicks = [];
+    try {
+      const clicksSnapshot = await getDocs(collection(db, 'sportsbookClicks'));
+      const clicks = clicksSnapshot.docs.map(doc => doc.data());
+
+      // Group by sportsbook
+      const clicksByBook = {};
+      clicks.forEach(click => {
+        const name = click.sportsbook || 'Unknown';
+        clicksByBook[name] = (clicksByBook[name] || 0) + 1;
+      });
+
+      sportsbookClicks = Object.entries(clicksByBook).map(([name, total]) => ({
+        name,
+        total
+      }));
+    } catch (err) {
+      console.log('No sportsbook clicks data yet');
+    }
+
+    // Return all analytics
+    return {
+      totalUsers,
+      activeToday,
+      newThisWeek,
+      newThisMonth,
+      starterCount,
+      proCount,
+      eliteCount,
+      sportsbookClicks,
+      aiEvaluations: 0, // TODO: Track this
+      oddsComparisons: 0, // TODO: Track this
+      aiTop5Views: 0, // TODO: Track this
+      betsTracked: 0 // TODO: Track this
+    };
+  } catch (error) {
+    console.error('Error getting analytics:', error);
+    throw new Error(`Analytics error: ${error.message}`);
+  }
+};
+
+// Analytics Tab Component
+const AnalyticsTab = () => {
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAdminAnalytics();
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Analytics error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AnalyticsContainer>
+        <LoadingContainer>
+          <LoadingSpinner />
+        </LoadingContainer>
+      </AnalyticsContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <AnalyticsContainer>
+        <ErrorContainer>
+          <h3>Error loading analytics</h3>
+          <p>{error}</p>
+          <RetryButton onClick={loadAnalytics}>Retry</RetryButton>
+        </ErrorContainer>
+      </AnalyticsContainer>
+    );
+  }
+
+  return (
+    <AnalyticsContainer>
+      <AnalyticsGrid>
+        {/* User Metrics */}
+        <AnalyticsCard>
+          <CardTitle>👥 User Metrics</CardTitle>
+          <MetricsGrid>
+            <MetricItem>
+              <MetricValue>{analytics.totalUsers}</MetricValue>
+              <MetricLabel>Total Users</MetricLabel>
+            </MetricItem>
+            <MetricItem>
+              <MetricValue>{analytics.activeToday}</MetricValue>
+              <MetricLabel>Active Today</MetricLabel>
+            </MetricItem>
+            <MetricItem>
+              <MetricValue>{analytics.newThisWeek}</MetricValue>
+              <MetricLabel>New This Week</MetricLabel>
+            </MetricItem>
+            <MetricItem>
+              <MetricValue>{analytics.newThisMonth}</MetricValue>
+              <MetricLabel>New This Month</MetricLabel>
+            </MetricItem>
+          </MetricsGrid>
+        </AnalyticsCard>
+
+        {/* Subscription Breakdown */}
+        <AnalyticsCard>
+          <CardTitle>💳 Subscription Breakdown</CardTitle>
+          <div>
+            <FeatureRow>
+              <span>Starter Plan</span>
+              <span>{analytics.starterCount}</span>
+            </FeatureRow>
+            <FeatureRow>
+              <span>Pro Plan</span>
+              <span>{analytics.proCount}</span>
+            </FeatureRow>
+            <FeatureRow>
+              <span>Elite Plan</span>
+              <span>{analytics.eliteCount}</span>
+            </FeatureRow>
+          </div>
+        </AnalyticsCard>
+
+        {/* Sportsbook Clicks */}
+        <AnalyticsCard>
+          <CardTitle>🔗 Sportsbook Referrals</CardTitle>
+          <div>
+            {analytics.sportsbookClicks?.length > 0 ? (
+              analytics.sportsbookClicks.map(sb => (
+                <SportsbookRow key={sb.name}>
+                  <span>{sb.name}</span>
+                  <span>Clicks: {sb.total}</span>
+                </SportsbookRow>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                No sportsbook clicks yet
+              </div>
+            )}
+          </div>
+        </AnalyticsCard>
+
+        {/* Feature Usage */}
+        <AnalyticsCard>
+          <CardTitle>⚡ Feature Usage</CardTitle>
+          <div>
+            <FeatureRow>
+              <span>AI Parlay Evaluations</span>
+              <span>{analytics.aiEvaluations || 0}</span>
+            </FeatureRow>
+            <FeatureRow>
+              <span>Odds Comparisons</span>
+              <span>{analytics.oddsComparisons || 0}</span>
+            </FeatureRow>
+            <FeatureRow>
+              <span>AI Top 5 Views</span>
+              <span>{analytics.aiTop5Views || 0}</span>
+            </FeatureRow>
+            <FeatureRow>
+              <span>Bets Tracked</span>
+              <span>{analytics.betsTracked || 0}</span>
+            </FeatureRow>
+          </div>
+        </AnalyticsCard>
+      </AnalyticsGrid>
+    </AnalyticsContainer>
+  );
+};
+
 const AdminManagementPage = () => {
   const { user } = useAuth();
   const { isMasterAdmin: isAdmin } = useUsageTracking();
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState('management');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [loading, setLoading] = useState(false);
@@ -320,16 +703,34 @@ const AdminManagementPage = () => {
       <PageHeader>
         <PageTitle>
           <Crown size={40} />
-          Master Admin Management
+          Master Admin Dashboard
         </PageTitle>
         <PageSubtitle>
-          Manage admin accounts and system administration
+          Comprehensive admin controls and analytics
         </PageSubtitle>
       </PageHeader>
 
-      <MasterAdminCard />
+      <TabContainer>
+        <TabBar>
+          <Tab
+            active={activeTab === 'management'}
+            onClick={() => setActiveTab('management')}
+          >
+            <Crown size={16} />
+            Management
+          </Tab>
+          <Tab
+            active={activeTab === 'analytics'}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart3 size={16} />
+            Analytics
+          </Tab>
+        </TabBar>
 
-      <SectionGrid>
+        <TabContent>
+          {activeTab === 'management' && (
+      <SectionGrid style={{ padding: '20px' }}>
         <Section>
           <SectionTitle>
             <Mail size={20} />
@@ -428,6 +829,11 @@ const AdminManagementPage = () => {
           </InfoMessage>
         </Section>
       </SectionGrid>
+          )}
+
+          {activeTab === 'analytics' && <AnalyticsTab />}
+        </TabContent>
+      </TabContainer>
     </PageContainer>
   );
 };
