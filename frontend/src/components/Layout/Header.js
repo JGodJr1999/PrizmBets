@@ -418,12 +418,7 @@ const Header = ({ user = null, onLogout }) => {
     <HeaderContainer>
       <HeaderContent>
         <Logo onClick={handleLogoClick}>
-          {/* Logo image temporarily removed - new logo coming soon */}
-          <LogoText>
-            <span>Prizm</span>
-            <span>Bets</span>
-          </LogoText>
-          <BetaTag>BETA</BetaTag>
+          {/* Logo completely removed - new logo coming soon */}
         </Logo>
         
         <MobileMenuButton onClick={toggleMobileMenu}>
