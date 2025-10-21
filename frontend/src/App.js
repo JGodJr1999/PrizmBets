@@ -89,8 +89,8 @@ const AppContent = () => {
       <MainContent>
         <Suspense fallback={<PageLoadingSkeleton />}>
           <Routes>
-            {/* Default route - redirect to dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Default route - redirect to Live Odds & Parlays */}
+            <Route path="/" element={<Navigate to="/live-sports" replace />} />
 
             {/* All routes now require authentication */}
             <Route path="/dashboard" element={<DashboardPage />} />

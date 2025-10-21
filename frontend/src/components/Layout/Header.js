@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, User, Menu, X, Trophy, Star, Crown, DollarSign, Home, Lock } from 'lucide-react';
+import { BarChart3, User, Menu, X, Trophy, Star, Crown, DollarSign, Lock } from 'lucide-react';
 // Logo temporarily removed - new logo coming soon
 // import prizmLogo from '../../assets/images/prizm-logo.png';
 import UserColumnMenu from './UserColumnMenu';
@@ -398,7 +398,13 @@ const Header = ({ user = null, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isFreeTier, isMasterAdmin } = useUsageTracking();
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    // Special case: treat /live-sports as active when on root path
+    if (path === '/live-sports') {
+      return location.pathname === path || location.pathname === '/';
+    }
+    return location.pathname === path;
+  };
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -406,7 +412,7 @@ const Header = ({ user = null, onLogout }) => {
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/live-sports');
     setIsMobileMenuOpen(false);
   };
 
@@ -426,14 +432,6 @@ const Header = ({ user = null, onLogout }) => {
         </MobileMenuButton>
         
         <Nav isOpen={isMobileMenuOpen}>
-          <NavItem
-            active={isActive('/')}
-            onClick={() => handleNavigation('/')}
-          >
-            <Home size={16} />
-            Home
-          </NavItem>
-
           <NavItem
             active={isActive('/live-sports')}
             onClick={() => handleNavigation('/live-sports')}
